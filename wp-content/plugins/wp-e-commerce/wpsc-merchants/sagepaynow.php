@@ -213,7 +213,10 @@ function pn_sagepaynow_ipn()
         $pnDone = false;
         $pnData = array();
         $pnHost = 'https://paynow.sagepay.co.za/site/paynow.aspx';
-        $pnOrderId = '';
+
+        $posted_id = $_POST['Reference']; //"Order #8-150819114657";
+        $pnOrderId = str_ireplace("Order #", "", $posted_id);
+        $pnOrderId = preg_replace("/-\d{12}/", "", $pnOrderId);
         $pnParamString = '';
 
         // Set debug email address
@@ -256,7 +259,7 @@ function pn_sagepaynow_ipn()
             // Get order data
             $sql =
                 "SELECT * FROM `". WPSC_TABLE_PURCHASE_LOGS ."`
-                WHERE `id` = ". $pnData['Extra1'] ."
+                WHERE `id` = ". $pnOrderId ."
                 LIMIT 1";
             $purchase = $wpdb->get_row( $sql, ARRAY_A );
 
@@ -297,8 +300,8 @@ function pn_sagepaynow_ipn()
             // If Sage Pay Now currency differs from local currency
             if( $pn_curr_code != $local_curr_code )
             {
-                pnlog( 'IPN: Currency conversion required' );
                 $compare_price = $curr->convert( $purchase['totalprice'], $pn_curr_code, $local_curr_code );
+                pnlog( 'IPN: Currency conversion required ' . $compare_price );
             } else {
                 pnlog( 'IPN: Currency conversion NOT required' );
                 $compare_price = $purchase['totalprice'];
@@ -310,6 +313,7 @@ function pn_sagepaynow_ipn()
             if( !pnAmountsEqual( $pnData['Amount'], $compare_price ) )
             {
                 $pnError = true;
+                pnlog( "Received amount: {$pnData['Amount']} | Actual amount: {$compare_price}" );
                 $pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
             }
             // Check session ID
@@ -352,7 +356,7 @@ function pn_sagepaynow_ipn()
                             "A Sage Pay Now transaction has been completed on your website\n".
                             "------------------------------------------------------------\n".
                             "Site: ". $vendor_name ." (". $vendor_url .")\n".
-                            "Purchase ID: ". $pnData['Extra1'] ."\n".
+                            "Purchase ID: ". $pnOrderId ."\n".
                             "Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
                             "Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n"."";
                             // "Order Status Code: ". $d['order_status'];
@@ -373,16 +377,16 @@ function pn_sagepaynow_ipn()
                     // If payment fails, delete the purchase log
         			$sql =
                         "SELECT * FROM `". WPSC_TABLE_CART_CONTENTS ."`
-                        WHERE `purchaseid`='". $pnData['Extra1'] ."'";
+                        WHERE `purchaseid`='". $pnOrderId ."'";
         			$cart_content = $wpdb->get_results( $sql, ARRAY_A );
         			foreach( (array)$cart_content as $cart_item )
         				$cart_item_variations = $wpdb->query(
                             "DELETE FROM `". WPSC_TABLE_CART_ITEM_VARIATIONS ."`
                             WHERE `cart_id` = '". $cart_item['id'] ."'", ARRAY_A );
 
-                    $wpdb->query( "DELETE FROM `". WPSC_TABLE_CART_CONTENTS ."` WHERE `purchaseid`='". $pnData['Extra1'] ."'" );
-        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pnData['Extra1'] ."')" );
-        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pnData['Extra1'] ."' LIMIT 1" );
+                    $wpdb->query( "DELETE FROM `". WPSC_TABLE_CART_CONTENTS ."` WHERE `purchaseid`='". $pnOrderId ."'" );
+        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pnOrderId ."')" );
+        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pnOrderId ."' LIMIT 1" );
 
                     $subject = "Sage Pay Now IPN Transaction on your site";
                     $body =
@@ -450,7 +454,7 @@ function pn_sagepaynow_ipn()
 
                 case PN_ERR_ORDER_ID_MISMATCH:
                     $body .=
-                        "Value received : ". $pnData['Extra1'] ."\n".
+                        "Value received : ". $pnOrderId ."\n".
                         "Value should be: ". $purchase['id'];
                     break;
 
