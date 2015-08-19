@@ -1,7 +1,7 @@
 Sage Pay Now WP e-Commerce Payment Gateway Module
 =================================================
 
-Revision 1.0.0
+Revision 2.0.0
 
 Introduction
 ------------
@@ -40,7 +40,7 @@ A. Sage Pay Now Gateway Server Configuration Steps:
 6. Type in your Email address
 7. Click "Allow credit card payments:"
 
-8. The Accept and Decline URLs should both be:
+8. The Accept, Decline, Notify and Redirect URLs should all be:
 	http://wp_ecommerce_installation/paynow.php
 
 9. It is highly recommended that you "Make test mode active:" while you are still testing your site.

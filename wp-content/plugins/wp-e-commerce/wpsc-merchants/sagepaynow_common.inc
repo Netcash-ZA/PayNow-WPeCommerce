@@ -7,7 +7,7 @@
 define( 'PN_SOFTWARE_NAME', 'WP_e-Commerce' );
 define( 'PN_SOFTWARE_VER', WPSC_PRESENTABLE_VERSION );
 define( 'PN_MODULE_NAME', 'SagePayNow-WP_e-Commerce' );
-define( 'PN_MODULE_VER', '1.0' );
+define( 'PN_MODULE_VER', '2.0' );
 
 // Features
 // - PHP
@@ -99,7 +99,7 @@ function pnlog( $msg = '', $close = false )
 
 /**
  * pnGetData
- *  
+ *
  */
 function pnGetData()
 {
@@ -119,14 +119,14 @@ function pnGetData()
 
 /**
  * pnAmountsEqual
- * 
+ *
  * Checks to see whether the given amounts are equal using a proper floating
  * point comparison with an Epsilon which ensures that insignificant decimal
  * places are ignored in the comparison.
- * 
+ *
  * eg. 100.00 is equal to 100.0001
  *
- * @param $amount1 Float 1st amount for comparison 
+ * @param $amount1 Float 1st amount for comparison
  * @param $amount2 Float 2nd amount for comparison
  */
 function pnAmountsEqual( $amount1, $amount2 )
