@@ -313,11 +313,11 @@ function pn_sagepaynow_ipn()
                 $pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
             }
             // Check session ID
-            elseif( strcasecmp( $pnData['Extra2'], $purchase['sessionid'] ) != 0 )
-            {
-                $pnError = true;
-                $pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
-            }
+            // elseif( strcasecmp( $pnData['Extra2'], $purchase['sessionid'] ) != 0 )
+            // {
+            //     $pnError = true;
+            //     $pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
+            // }
         }
 
         //// Check status and update order
