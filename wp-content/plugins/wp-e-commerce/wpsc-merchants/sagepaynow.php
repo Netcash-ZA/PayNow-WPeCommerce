@@ -128,10 +128,11 @@ function gateway_sagepaynow( $sep, $sessionid )
     if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_last')] ) )
         $data['name_last'] = $_POST['collected_data'][get_option('sagepaynow_form_name_last')];
 
+    global $user_ID;
 
     $customerName = "{$data['name_first']} {$data['name_last']}";
     $orderID = $purchase['id'];
-    $customerID = ""; // TODO: Determine user id
+    $customerID = $user_ID;
     $sageGUID = "TBC";
 
     // Construct variables for post
