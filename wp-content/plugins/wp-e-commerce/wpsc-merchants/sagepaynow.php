@@ -469,7 +469,7 @@ function pn_sagepaynow_ipn()
         }
 
         // Close log
-        pnlog( '', true );
+        // pnlog( '', true );
         return !$pnError;
     	// exit();
    	// }
