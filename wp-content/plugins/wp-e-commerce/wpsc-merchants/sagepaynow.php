@@ -121,6 +121,19 @@ function gateway_sagepaynow( $sep, $sessionid )
     $cancelUrl = get_option( 'transact_url' );
     $notifyUrl = get_option( 'siteurl' ) .'/?ipn_request=true';
 
+    // Buyer details
+    if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_first')] ) )
+        $data['name_first'] = $_POST['collected_data'][get_option('sagepaynow_form_name_first')];
+
+    if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_last')] ) )
+        $data['name_last'] = $_POST['collected_data'][get_option('sagepaynow_form_name_last')];
+
+
+    $customerName = "{$data['name_first']} {$data['name_last']}";
+    $orderID = $purchase['id'];
+    $customerID = ""; // TODO: Determine user id
+    $sageGUID = "TBC";
+
     // Construct variables for post
     $data = array(
         // Merchant details
@@ -132,24 +145,21 @@ function gateway_sagepaynow( $sep, $sessionid )
 
         // Item details
         'p2' => 'Order #'. $purchase['id'] . '-' . date('ymdhis'),
-        'p3' => get_option( 'blogname' ) .' purchase, Order #'. $purchase['id'],
+        // 'p3' => get_option( 'blogname' ) .' purchase, Order #'. $purchase['id'],
         // 'p3' => $pnDescription,
         'p4' => number_format( sprintf( "%01.2f", $pnAmount ), 2, '.', '' ),
-        'm4' => $purchase['id'],
+        // 'm4' => $purchase['id'],
         // 'currency_code' => $pn_curr_code,
         'm5' => $sessionid,
+
+        'p3' => "{$customerName} | {$orderID}",
+        'm3' => "$sageGUID",
+        'm4' => "{$customerID}",
 
         // Other details
         // 'm6' => PN_USER_AGENT,
         // 'm10' => 'ipn_request=true'
         );
-
-    // Buyer details
-    if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_first')] ) )
-        $data['name_first'] = $_POST['collected_data'][get_option('sagepaynow_form_name_first')];
-
-    if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_last')] ) )
-        $data['name_last'] = $_POST['collected_data'][get_option('sagepaynow_form_name_last')];
 
     $email_data = $wpdb->get_results(
         "SELECT `id`, `type`
