@@ -133,13 +133,13 @@ function gateway_sagepaynow( $sep, $sessionid )
     $customerName = "{$data['name_first']} {$data['name_last']}";
     $orderID = $purchase['id'];
     $customerID = $user_ID;
-    $sageGUID = "TBC";
+    $sageGUID = "08693ef6-d77c-4504-976b-ea54be1f68d1";
 
     // Construct variables for post
     $data = array(
         // Merchant details
         'm1' => $serviceKey,
-        'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',
+        'm2' => $sageGUID,
         // 'return_url' => $returnUrl,
         // 'cancel_url' => $cancelUrl,
         // 'notify_url' => $notifyUrl,
