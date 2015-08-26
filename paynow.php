@@ -40,10 +40,19 @@ function pn_do_transaction(){
     }
 }
 
+/**
+ * Check if this is a 'callback' stating the transaction is pending.
+ */
+function pn_is_pending() {
+    return isset($_POST['TransactionAccepted'])
+        && $_POST['TransactionAccepted'] == 'false'
+        && stristr($_POST['Reason'], 'pending');
+}
+
 // $url_for_redirect = $home_url . '/your-account/';
 $url_for_redirect = ( get_option( 'user_account_url' ) );
 
-if( isset($_POST) && !empty($_POST) ) {
+if( isset($_POST) && !empty($_POST) && !pn_is_pending() ) {
 
     // This is the notification coming in OR the CC callback!
     // Act as an IPN request and forward request to Credit Card method.
