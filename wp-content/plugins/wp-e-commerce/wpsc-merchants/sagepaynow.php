@@ -565,6 +565,7 @@ function form_sagepaynow()
 		  <td colspan="2">
 			<span  class="wpscsmall description">
 			Please register with <a href="https://sagepay.co.za/" target="_blank">Sage Pay</a> to use this module. You will require a Pay Now Service Key which is available from your Sage Connect -> Pay Now section on your Sage Pay <a href="https://merchant.sagepay.co.za/" target="_blank">Merchant Account</a>.
+			</span>
 		  </td>
 		</tr>
 
