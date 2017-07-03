@@ -28,9 +28,9 @@ You will need:
 * Sage Pay Now Service key
 * OpenCart admin login credentials
 
-A. Sage Pay Now Gateway Server Configuration Steps:
+A. Sage Pay Now Gateway Configuration Steps:
 
-1. Log into your Sage Pay Now Gateway Server configuration page:
+1. Log into your Sage Pay Now Gateway configuration page:
 	https://merchant.sagepay.co.za/SiteLogin.aspx
 2. Type in your Sage Pay Username, Password, and PIN
 2. Click on Account Profile
@@ -41,30 +41,26 @@ A. Sage Pay Now Gateway Server Configuration Steps:
 7. Click "Allow credit card payments:"
 
 8. The Accept, Decline, Notify and Redirect URLs should all be:
-	http://wp_ecommerce_installation/paynow.php
+	http://YOUR_wp_ecommerce_DOMAIN.com/paynow.php
 
 9. It is highly recommended that you "Make test mode active:" while you are still testing your site.
 
 B. WP e-Commerce Steps:
 
-1. Log into WP e-commerce as admin (http://wpecommerce_installation/wp-admin)
-2. Navigate to Plugins / Add New
-3. Click Upload / Choose file and select 'paynow-wp-e-commerce.zip'
-4. Click 'Install Now' and wait for the process to complete.
-5. Click 'Activate Plugin'
-6. Navigate to Settings / Store / Payments Tab
-7. Click to enable 'Sage Pay Now' and then type in your Service Key
-8. Click Update when you are done.
+1. Unzip the module to a temporary location on your computer
+2. Copy the “wp-content” folder in the archive to your base “wordpress” folder
+3. This should NOT overwrite any existing files or folders and merely supplement them with the PayNow files
+4. This is however, dependent on the FTP program you use
+5. Log into WP e-commerce as admin (http://wpecommerce_installation/wp-admin)
+6. Navigate to Plugins / Add New
+7. Click Upload / Choose file and select 'paynow-wp-e-commerce.zip'
+8. Click 'Install Now' and wait for the process to complete.
+9. Click 'Activate Plugin'
+10. Navigate to Settings / Store / Payments Tab
+11. Click to enable 'Sage Pay Now' and then type in your Service Key
+12. Click Update when you are done.
 
 You are now ready to transact. Remember to turn of "Make test mode active:" when you are ready to go live.
-
-Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now configuration:
-![alt tag](http://wpecommerce.gatewaymodules.com/wpecommerce_screenshot1.png)
-
-Demo Site
----------
-There is a demo site if you want to see osCommerce and the Sage Pay Now gateway in action:
-http://wpecommerce.gatewaymodules.com
 
 Revision History
 ----------------
