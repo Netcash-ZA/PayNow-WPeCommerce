@@ -34,163 +34,163 @@ require_once( 'sagepaynow_common.inc' );
  */
 function gateway_sagepaynow( $sep, $sessionid )
 {
-    // Variable declaration
-    global $wpdb, $wpsc_cart;
-    $pnAmount = 0;
-    $pnDescription = '';
-    $pnOutput = '';
+	// Variable declaration
+	global $wpdb, $wpsc_cart;
+	$pnAmount = 0;
+	$pnDescription = '';
+	$pnOutput = '';
 
-    // Get purchase log
-    $sql =
-        "SELECT *
-        FROM `". WPSC_TABLE_PURCHASE_LOGS ."`
-        WHERE `sessionid` = ". $sessionid ."
-        LIMIT 1";
-    $purchase = $wpdb->get_row( $sql, ARRAY_A ) ;
+	// Get purchase log
+	$sql =
+		"SELECT *
+		FROM `". WPSC_TABLE_PURCHASE_LOGS ."`
+		WHERE `sessionid` = ". $sessionid ."
+		LIMIT 1";
+	$purchase = $wpdb->get_row( $sql, ARRAY_A ) ;
 
-    if( $purchase['totalprice'] == 0 )
-    {
-    	header( "Location: ". get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid );
-    	exit();
-    }
+	if( $purchase['totalprice'] == 0 )
+	{
+		header( "Location: ". get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid );
+		exit();
+	}
 
-    // Get cart contents
-    $sql =
-        "SELECT *
-        FROM `". WPSC_TABLE_CART_CONTENTS ."`
-        WHERE `purchaseid` = '". $purchase['id'] ."'";
-    $cart = $wpdb->get_results( $sql, ARRAY_A ) ;
+	// Get cart contents
+	$sql =
+		"SELECT *
+		FROM `". WPSC_TABLE_CART_CONTENTS ."`
+		WHERE `purchaseid` = '". $purchase['id'] ."'";
+	$cart = $wpdb->get_results( $sql, ARRAY_A ) ;
 
-    // Lookup the currency codes and local price
-    $sql =
-        "SELECT `code`
-        FROM `". WPSC_TABLE_CURRENCY_LIST ."`
-        WHERE `id` = '". get_option( 'currency_type' ) ."'
-        LIMIT 1";
-    $local_curr_code = $wpdb->get_var( $sql );
-    $pn_curr_code = get_option( 'sagepaynow_currcode' );
+	// Lookup the currency codes and local price
+	$sql =
+		"SELECT `code`
+		FROM `". WPSC_TABLE_CURRENCY_LIST ."`
+		WHERE `id` = '". get_option( 'currency_type' ) ."'
+		LIMIT 1";
+	$local_curr_code = $wpdb->get_var( $sql );
+	$pn_curr_code = get_option( 'sagepaynow_currcode' );
 
-    // Set default currency
-    if( $pn_curr_code == '' )
-    	$pn_curr_code = 'ZAR';
+	// Set default currency
+	if( $pn_curr_code == '' )
+		$pn_curr_code = 'ZAR';
 
-    // Convert from the currency of the users shopping cart to the currency
-    // which the user has specified in their Sage Pay Now preferences.
-    $curr = new CURRENCYCONVERTER();
+	// Convert from the currency of the users shopping cart to the currency
+	// which the user has specified in their Sage Pay Now preferences.
+	$curr = new CURRENCYCONVERTER();
 
 	$total = $wpsc_cart->calculate_total_price();
 	$discount = $wpsc_cart->coupons_amount;
 
 	// If Sage Pay Now currency differs from local currency
-    if( $pn_curr_code != $local_curr_code )
-    {
-        pnlog( 'Currency conversion required' );
-        $pnAmount = $curr->convert( $total, $pn_curr_code, $local_curr_code );
+	if( $pn_curr_code != $local_curr_code )
+	{
+		pnlog( 'Currency conversion required' );
+		$pnAmount = $curr->convert( $total, $pn_curr_code, $local_curr_code );
 	}
 	// Else, if currencies are the same
-    else
-    {
-        pnlog( 'NO Currency conversion required' );
-        $pnAmount = $total;
+	else
+	{
+		pnlog( 'NO Currency conversion required' );
+		$pnAmount = $total;
 
-        // Create description from cart contents
-        foreach( $cart as $cartItem )
-        {
-            $itemPrice = round( $cartItem['price'] * ( 100 + $cartItem['gst'] ) / 100, 2 );
-            $itemShippingPrice = $cartItem['pnp'];    // No tax charged on shipping
-            $itemPriceTotal = ( $itemPrice + $itemShippingPrice ) * $cartItem['quantity'] ;
-            $pnDescription .= $cartItem['quantity'] .' x '. $cartItem['name'] .
-                ' @ '. number_format( $itemPrice, 2, '.', ',' ) .'ea'.
-                ' (Shipping = '. number_format( $itemShippingPrice, 2, '.', ',' ) .'ea)'.
-                ' = '. number_format( $itemPriceTotal, 2, '.', ',' ) .';';
-        }
+		// Create description from cart contents
+		foreach( $cart as $cartItem )
+		{
+			$itemPrice = round( $cartItem['price'] * ( 100 + $cartItem['gst'] ) / 100, 2 );
+			$itemShippingPrice = $cartItem['pnp'];    // No tax charged on shipping
+			$itemPriceTotal = ( $itemPrice + $itemShippingPrice ) * $cartItem['quantity'] ;
+			$pnDescription .= $cartItem['quantity'] .' x '. $cartItem['name'] .
+				' @ '. number_format( $itemPrice, 2, '.', ',' ) .'ea'.
+				' (Shipping = '. number_format( $itemShippingPrice, 2, '.', ',' ) .'ea)'.
+				' = '. number_format( $itemPriceTotal, 2, '.', ',' ) .';';
+		}
 
-        $pnDescription .= ' Base shipping = '. number_format( $purchase['base_shipping'], 2, '.', ',' ) .';';
+		$pnDescription .= ' Base shipping = '. number_format( $purchase['base_shipping'], 2, '.', ',' ) .';';
 
-        if( $discount > 0 )
-            $pnDescription .= ' Discount = '. number_format( $discount, 2, '.', ',' ) .';';
+		if( $discount > 0 )
+			$pnDescription .= ' Discount = '. number_format( $discount, 2, '.', ',' ) .';';
 
-        $pnDescription .= ' Total = '. number_format( $pnAmount, 2, '.', ',' );
+		$pnDescription .= ' Total = '. number_format( $pnAmount, 2, '.', ',' );
 	}
 
-    $serviceKey = get_option( 'sagepaynow_service_key' );
-    $sagepaynow_url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
+	$serviceKey = get_option( 'sagepaynow_service_key' );
+	$sagepaynow_url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
 
-    // Create URLs
-    $returnUrl = get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid ."&gateway=sagepaynow";
-    $cancelUrl = get_option( 'transact_url' );
-    $notifyUrl = get_option( 'siteurl' ) .'/?ipn_request=true';
+	// Create URLs
+	$returnUrl = get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid ."&gateway=sagepaynow";
+	$cancelUrl = get_option( 'transact_url' );
+	$notifyUrl = get_option( 'siteurl' ) .'/?ipn_request=true';
 
-    // Buyer details
-    if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_first')] ) )
-        $data['name_first'] = $_POST['collected_data'][get_option('sagepaynow_form_name_first')];
+	// Buyer details
+	if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_first')] ) )
+		$data['name_first'] = $_POST['collected_data'][get_option('sagepaynow_form_name_first')];
 
-    if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_last')] ) )
-        $data['name_last'] = $_POST['collected_data'][get_option('sagepaynow_form_name_last')];
+	if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_last')] ) )
+		$data['name_last'] = $_POST['collected_data'][get_option('sagepaynow_form_name_last')];
 
-    global $user_ID;
+	global $user_ID;
 
-    $customerName = "{$data['name_first']} {$data['name_last']}";
-    $orderID = $purchase['id'];
-    $customerID = $user_ID;
-    $sageGUID = "08693ef6-d77c-4504-976b-ea54be1f68d1";
+	$customerName = "{$data['name_first']} {$data['name_last']}";
+	$orderID = $purchase['id'];
+	$customerID = $user_ID;
+	$sageGUID = "08693ef6-d77c-4504-976b-ea54be1f68d1";
 
-    // Construct variables for post
-    $data = array(
-        // Merchant details
-        'm1' => $serviceKey,
-        'm2' => $sageGUID,
-        // 'return_url' => $returnUrl,
-        // 'cancel_url' => $cancelUrl,
-        // 'notify_url' => $notifyUrl,
+	// Construct variables for post
+	$data = array(
+		// Merchant details
+		'm1' => $serviceKey,
+		'm2' => $sageGUID,
+		// 'return_url' => $returnUrl,
+		// 'cancel_url' => $cancelUrl,
+		// 'notify_url' => $notifyUrl,
 
-        // Item details
-        'p2' => 'Order #'. $purchase['id'] . '-' . date('ymdhis'),
-        // 'p3' => get_option( 'blogname' ) .' purchase, Order #'. $purchase['id'],
-        // 'p3' => $pnDescription,
-        'p4' => number_format( sprintf( "%01.2f", $pnAmount ), 2, '.', '' ),
-        // 'm4' => $purchase['id'],
-        // 'currency_code' => $pn_curr_code,
-        'm5' => $sessionid,
+		// Item details
+		'p2' => 'Order #'. $purchase['id'] . '-' . date('ymdhis'),
+		// 'p3' => get_option( 'blogname' ) .' purchase, Order #'. $purchase['id'],
+		// 'p3' => $pnDescription,
+		'p4' => number_format( sprintf( "%01.2f", $pnAmount ), 2, '.', '' ),
+		// 'm4' => $purchase['id'],
+		// 'currency_code' => $pn_curr_code,
+		'm5' => $sessionid,
 
-        'p3' => "{$customerName} | {$orderID}",
-        'm3' => "$sageGUID",
-        'm4' => "{$customerID}",
+		'p3' => "{$customerName} | {$orderID}",
+		'm3' => "$sageGUID",
+		'm4' => "{$customerID}",
 
-        // Other details
-        // 'm6' => PN_USER_AGENT,
-        // 'm10' => 'ipn_request=true'
-        );
+		// Other details
+		// 'm6' => PN_USER_AGENT,
+		// 'm10' => 'ipn_request=true'
+		);
 
-    $email_data = $wpdb->get_results(
-        "SELECT `id`, `type`
-        FROM `".WPSC_TABLE_CHECKOUT_FORMS."`
-        WHERE `type` IN ('email') AND `active` = '1'", ARRAY_A );
+	$email_data = $wpdb->get_results(
+		"SELECT `id`, `type`
+		FROM `".WPSC_TABLE_CHECKOUT_FORMS."`
+		WHERE `type` IN ('email') AND `active` = '1'", ARRAY_A );
 
-    foreach( (array)$email_data as $email )
-    	$data['email_address'] = $_POST['collected_data'][$email['id']];
+	foreach( (array)$email_data as $email )
+		$data['email_address'] = $_POST['collected_data'][$email['id']];
 
-    if( !empty( $_POST['collected_data'][get_option('email_form_field')] ) && ( $data['email'] == null ) )
-    	$data['email_address'] = $_POST['collected_data'][get_option('email_form_field')];
+	if( !empty( $_POST['collected_data'][get_option('email_form_field')] ) && ( $data['email'] == null ) )
+		$data['email_address'] = $_POST['collected_data'][get_option('email_form_field')];
 
-    // Create output string
-    foreach( $data as $key => $val )
-        $pnOutput .= $key .'='. urlencode( $val ) .'&';
+	// Create output string
+	foreach( $data as $key => $val )
+		$pnOutput .= $key .'='. urlencode( $val ) .'&';
 
-    // Remove last ampersand
-    $pnOutput = substr( $pnOutput, 0, -1 );
+	// Remove last ampersand
+	$pnOutput = substr( $pnOutput, 0, -1 );
 
-    // Display debugging information (if in debug mode)
+	// Display debugging information (if in debug mode)
 	if( PN_DEBUG || ( defined( 'WPSC_ADD_DEBUG_PAGE' ) && ( WPSC_ADD_DEBUG_PAGE == true ) ) )
-    {
-      	echo "<a href='". $sagepaynow_url ."?". $pnOutput ."'>Test the URL here</a>";
-      	echo "<pre>". print_r( $data, true ) ."</pre>";
-      	exit();
+	{
+		echo "<a href='". $sagepaynow_url ."?". $pnOutput ."'>Test the URL here</a>";
+		echo "<pre>". print_r( $data, true ) ."</pre>";
+		exit();
 	}
 
-    // Send to Sage Pay Now (GET)
-    header( "Location: ". $sagepaynow_url ."?". $pnOutput );
-    exit();
+	// Send to Sage Pay Now (GET)
+	header( "Location: ". $sagepaynow_url ."?". $pnOutput );
+	exit();
 }
 
 /**
@@ -202,144 +202,144 @@ function gateway_sagepaynow( $sep, $sessionid )
  */
 function pn_sagepaynow_ipn()
 {
-    // Check if this is an IPN request
-    // Has to be done like this (as opposed to "exit" as processing needs
-    // to continue after this check.
-    // if( ( isset($_GET['ipn_request']) && $_GET['ipn_request'] == 'true' ) ) {
-        // Variable Initialization
-        global $wpdb;
-        $pnError = false;
-        $pnErrMsg = '';
-        $pnDone = false;
-        $pnData = array();
-        $pnHost = 'https://paynow.sagepay.co.za/site/paynow.aspx';
+	// Check if this is an IPN request
+	// Has to be done like this (as opposed to "exit" as processing needs
+	// to continue after this check.
+	// if( ( isset($_GET['ipn_request']) && $_GET['ipn_request'] == 'true' ) ) {
+		// Variable Initialization
+		global $wpdb;
+		$pnError = false;
+		$pnErrMsg = '';
+		$pnDone = false;
+		$pnData = array();
+		$pnHost = 'https://paynow.sagepay.co.za/site/paynow.aspx';
 
-        $posted_id = $_POST['Reference']; //"Order #8-150819114657";
-        $pnOrderId = str_ireplace("Order #", "", $posted_id);
-        $pnOrderId = preg_replace("/-\d{12}/", "", $pnOrderId);
-        $pnParamString = '';
+		$posted_id = $_POST['Reference']; //"Order #8-150819114657";
+		$pnOrderId = str_ireplace("Order #", "", $posted_id);
+		$pnOrderId = preg_replace("/-\d{12}/", "", $pnOrderId);
+		$pnParamString = '';
 
-        // Set debug email address
-        if( get_option( 'sagepaynow_debug_email' ) != '' )
-            $pnDebugEmail = get_option( 'sagepaynow_debug_email' );
-        elseif( get_option( 'purch_log_email' ) != '' )
-            $pnDebugEmail = get_option( 'purch_log_email' );
-        else
-            $pnDebugEmail = get_option( 'admin_email' );
+		// Set debug email address
+		if( get_option( 'sagepaynow_debug_email' ) != '' )
+			$pnDebugEmail = get_option( 'sagepaynow_debug_email' );
+		elseif( get_option( 'purch_log_email' ) != '' )
+			$pnDebugEmail = get_option( 'purch_log_email' );
+		else
+			$pnDebugEmail = get_option( 'admin_email' );
 
-        pnlog( 'Sage Pay Now IPN call received' );
+		pnlog( 'Sage Pay Now IPN call received' );
 
-        //// Notify Sage Pay Now that information has been received
-        if( !$pnError && !$pnDone )
-        {
-            header( 'HTTP/1.0 200 OK' );
-            flush();
-        }
+		//// Notify Sage Pay Now that information has been received
+		if( !$pnError && !$pnDone )
+		{
+			header( 'HTTP/1.0 200 OK' );
+			flush();
+		}
 
-        //// Get data sent by Sage Pay Now
-        if( !$pnError && !$pnDone )
-        {
-            pnlog( 'Get posted data' );
+		//// Get data sent by Sage Pay Now
+		if( !$pnError && !$pnDone )
+		{
+			pnlog( 'Get posted data' );
 
-            // Posted variables from IPN
-            $pnData = pnGetData();
+			// Posted variables from IPN
+			$pnData = pnGetData();
 
-            pnlog( 'Sage Pay Now Data: '. print_r( $pnData, true ) );
+			pnlog( 'Sage Pay Now Data: '. print_r( $pnData, true ) );
 
-            if( $pnData === false )
-            {
-                $pnError = true;
-                $pnErrMsg = PN_ERR_BAD_ACCESS;
-            }
-        }
+			if( $pnData === false )
+			{
+				$pnError = true;
+				$pnErrMsg = PN_ERR_BAD_ACCESS;
+			}
+		}
 
-        // Get internal order and verify it hasn't already been processed
-        if( !$pnError && !$pnDone )
-        {
-            // Get order data
-            $sql =
-                "SELECT * FROM `". WPSC_TABLE_PURCHASE_LOGS ."`
-                WHERE `id` = ". $pnOrderId ."
-                LIMIT 1";
-            $purchase = $wpdb->get_row( $sql, ARRAY_A );
+		// Get internal order and verify it hasn't already been processed
+		if( !$pnError && !$pnDone )
+		{
+			// Get order data
+			$sql =
+				"SELECT * FROM `". WPSC_TABLE_PURCHASE_LOGS ."`
+				WHERE `id` = ". $pnOrderId ."
+				LIMIT 1";
+			$purchase = $wpdb->get_row( $sql, ARRAY_A );
 
-            pnlog( "Purchase:\n". print_r( $purchase, true )  );
+			pnlog( "Purchase:\n". print_r( $purchase, true )  );
 
-            // Check if order has already been processed
-            // It has been "processed" if it has a status above "Order Received"
-            if( $purchase['processed'] > get_option( 'sagepaynow_pending_status' ) )
-            {
-                pnlog( "Order has already been processed" );
-                $pnDone = true;
-            }
-        }
+			// Check if order has already been processed
+			// It has been "processed" if it has a status above "Order Received"
+			if( $purchase['processed'] > get_option( 'sagepaynow_pending_status' ) )
+			{
+				pnlog( "Order has already been processed" );
+				$pnDone = true;
+			}
+		}
 
-        // Check data against internal order
-        if( !$pnError && !$pnDone )
-        {
-            pnlog( 'Check data against internal order' );
+		// Check data against internal order
+		if( !$pnError && !$pnDone )
+		{
+			pnlog( 'Check data against internal order' );
 
 
-            // Lookup the currency codes and local price
-            $sql =
-                "SELECT `code`
-                FROM `". WPSC_TABLE_CURRENCY_LIST ."`
-                WHERE `id` = '". get_option( 'currency_type' ) ."'
-                LIMIT 1";
-            $local_curr_code = $wpdb->get_var( $sql );
-            $pn_curr_code = get_option( 'sagepaynow_currcode' );
+			// Lookup the currency codes and local price
+			$sql =
+				"SELECT `code`
+				FROM `". WPSC_TABLE_CURRENCY_LIST ."`
+				WHERE `id` = '". get_option( 'currency_type' ) ."'
+				LIMIT 1";
+			$local_curr_code = $wpdb->get_var( $sql );
+			$pn_curr_code = get_option( 'sagepaynow_currcode' );
 
-            // Set default currency
-            if( $pn_curr_code == '' )
-                $pn_curr_code = 'ZAR';
+			// Set default currency
+			if( $pn_curr_code == '' )
+				$pn_curr_code = 'ZAR';
 
-            // Convert from the currency of the users shopping cart to the currency
-            // which the user has specified in their Sage Pay Now preferences.
-            $curr = new CURRENCYCONVERTER();
+			// Convert from the currency of the users shopping cart to the currency
+			// which the user has specified in their Sage Pay Now preferences.
+			$curr = new CURRENCYCONVERTER();
 
-            // If Sage Pay Now currency differs from local currency
-            if( $pn_curr_code != $local_curr_code )
-            {
-                $compare_price = $curr->convert( $purchase['totalprice'], $pn_curr_code, $local_curr_code );
-                pnlog( 'IPN: Currency conversion required ' . $compare_price );
-            } else {
-                pnlog( 'IPN: Currency conversion NOT required' );
-                $compare_price = $purchase['totalprice'];
-            }
+			// If Sage Pay Now currency differs from local currency
+			if( $pn_curr_code != $local_curr_code )
+			{
+				$compare_price = $curr->convert( $purchase['totalprice'], $pn_curr_code, $local_curr_code );
+				pnlog( 'IPN: Currency conversion required ' . $compare_price );
+			} else {
+				pnlog( 'IPN: Currency conversion NOT required' );
+				$compare_price = $purchase['totalprice'];
+			}
 
-            // pnlog( "IPN: POSTED price {$pnData['Amount']} | COMPARE price {$compare_price} | TOTAL price {$purchase['totalprice']}" );
+			// pnlog( "IPN: POSTED price {$pnData['Amount']} | COMPARE price {$compare_price} | TOTAL price {$purchase['totalprice']}" );
 
-            // Check order amount
-            if( !pnAmountsEqual( $pnData['Amount'], $compare_price ) )
-            {
-                $pnError = true;
-                pnlog( "Received amount: {$pnData['Amount']} | Actual amount: {$compare_price}" );
-                $pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
-            }
-            // Check session ID
-            // elseif( strcasecmp( $pnData['Extra2'], $purchase['sessionid'] ) != 0 )
-            // {
-            //     $pnError = true;
-            //     $pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
-            // }
-        }
+			// Check order amount
+			if( !pnAmountsEqual( $pnData['Amount'], $compare_price ) )
+			{
+				$pnError = true;
+				pnlog( "Received amount: {$pnData['Amount']} | Actual amount: {$compare_price}" );
+				$pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
+			}
+			// Check session ID
+			// elseif( strcasecmp( $pnData['Extra2'], $purchase['sessionid'] ) != 0 )
+			// {
+			//     $pnError = true;
+			//     $pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
+			// }
+		}
 
-        //// Check status and update order
-        if( !$pnError && !$pnDone )
-        {
-            pnlog( 'Check status and update order' );
+		//// Check status and update order
+		if( !$pnError && !$pnDone )
+		{
+			pnlog( 'Check status and update order' );
 
-            $sessionid = $pnData['Extra2'];
-            $transaction_id = $pnData['RequestTrace'];
-            $vendor_name = get_option( 'blogname');
-            $vendor_url = get_option( 'siteurl');
+			$sessionid = $pnData['Extra2'];
+			$transaction_id = $pnData['RequestTrace'];
+			$vendor_name = get_option( 'blogname');
+			$vendor_url = get_option( 'siteurl');
 
-    		switch( $pnData['TransactionAccepted'] )
-            {
-                case 'true':
-                    pnlog( '- Complete' );
+			switch( $pnData['TransactionAccepted'] )
+			{
+				case 'true':
+					pnlog( '- Complete' );
 
-                    // Update the purchase status
+					// Update the purchase status
 					$data = array(
 						'processed' => get_option( 'sagepaynow_complete_status'),
 						'transactid' => $transaction_id,
@@ -347,136 +347,136 @@ function pn_sagepaynow_ipn()
 					);
 
 					wpsc_update_purchase_log_details( $sessionid, $data, 'sessionid' );
-        			transaction_results( $sessionid, false, $transaction_id );
-                    $admin_email = get_option('admin_email');
+					transaction_results( $sessionid, false, $transaction_id );
+					$admin_email = get_option('admin_email');
 
-                        $subject = "Sage Pay Now IPN on your site";
-                        $body =
-                            "Hi,\n\n".
-                            "A Sage Pay Now transaction has been completed on your website\n".
-                            "------------------------------------------------------------\n".
-                            "Site: ". $vendor_name ." (". $vendor_url .")\n".
-                            "Purchase ID: ". $pnOrderId ."\n".
-                            "Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
-                            "Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n"."";
-                            // "Order Status Code: ". $d['order_status'];
+						$subject = "Sage Pay Now IPN on your site";
+						$body =
+							"Hi,\n\n".
+							"A Sage Pay Now transaction has been completed on your website\n".
+							"------------------------------------------------------------\n".
+							"Site: ". $vendor_name ." (". $vendor_url .")\n".
+							"Purchase ID: ". $pnOrderId ."\n".
+							"Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
+							"Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n"."";
+							// "Order Status Code: ". $d['order_status'];
 
-                    if(get_option('sagepaynow_email_admin_on_success') == 1)
-                    {
-                        mail( get_option('sagepaynow_success_email'), $subject, $body );
-                    }
-                    if( PN_DEBUG )
-                    {
-                        mail( $pnDebugEmail, $subject, $body );
-                    }
-                    break;
+					if(get_option('sagepaynow_email_admin_on_success') == 1)
+					{
+						mail( get_option('sagepaynow_success_email'), $subject, $body );
+					}
+					if( PN_DEBUG )
+					{
+						mail( $pnDebugEmail, $subject, $body );
+					}
+					break;
 
-    			case 'false':
-                    pnlog( '- Failed' );
+				case 'false':
+					pnlog( '- Failed' );
 
-                    // If payment fails, delete the purchase log
-        			$sql =
-                        "SELECT * FROM `". WPSC_TABLE_CART_CONTENTS ."`
-                        WHERE `purchaseid`='". $pnOrderId ."'";
-        			$cart_content = $wpdb->get_results( $sql, ARRAY_A );
-        			foreach( (array)$cart_content as $cart_item )
-        				$cart_item_variations = $wpdb->query(
-                            "DELETE FROM `". WPSC_TABLE_CART_ITEM_VARIATIONS ."`
-                            WHERE `cart_id` = '". $cart_item['id'] ."'", ARRAY_A );
+					// If payment fails, delete the purchase log
+					$sql =
+						"SELECT * FROM `". WPSC_TABLE_CART_CONTENTS ."`
+						WHERE `purchaseid`='". $pnOrderId ."'";
+					$cart_content = $wpdb->get_results( $sql, ARRAY_A );
+					foreach( (array)$cart_content as $cart_item )
+						$cart_item_variations = $wpdb->query(
+							"DELETE FROM `". WPSC_TABLE_CART_ITEM_VARIATIONS ."`
+							WHERE `cart_id` = '". $cart_item['id'] ."'", ARRAY_A );
 
-                    $wpdb->query( "DELETE FROM `". WPSC_TABLE_CART_CONTENTS ."` WHERE `purchaseid`='". $pnOrderId ."'" );
-        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pnOrderId ."')" );
-        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pnOrderId ."' LIMIT 1" );
+					$wpdb->query( "DELETE FROM `". WPSC_TABLE_CART_CONTENTS ."` WHERE `purchaseid`='". $pnOrderId ."'" );
+					$wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pnOrderId ."')" );
+					$wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pnOrderId ."' LIMIT 1" );
 
-                    $subject = "Sage Pay Now IPN Transaction on your site";
-                    $body =
-                        "Hi,\n\n".
-                        "A failed Sage Pay Now transaction on your website requires attention\n".
-                        "------------------------------------------------------------\n".
-                        "Site: ". $vendor_name ." (". $vendor_url .")\n".
-                        "Purchase ID: ". $purchase['id'] ."\n".
-                        "User ID: ". $purchase['user_ID'] ."\n".
-                        "Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
-                        "Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'];
-                    mail( $pnDebugEmail, $subject, $body );
-        			break;
+					$subject = "Sage Pay Now IPN Transaction on your site";
+					$body =
+						"Hi,\n\n".
+						"A failed Sage Pay Now transaction on your website requires attention\n".
+						"------------------------------------------------------------\n".
+						"Site: ". $vendor_name ." (". $vendor_url .")\n".
+						"Purchase ID: ". $purchase['id'] ."\n".
+						"User ID: ". $purchase['user_ID'] ."\n".
+						"Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
+						"Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'];
+					mail( $pnDebugEmail, $subject, $body );
+					break;
 
-    			case 'PENDING':
-                    pnlog( '- Pending' );
+				case 'PENDING':
+					pnlog( '- Pending' );
 
-                    // Need to wait for "Completed" before processing
-        			$sql =
-                        "UPDATE `". WPSC_TABLE_PURCHASE_LOGS ."`
-                        SET `transactid` = '". $transaction_id ."', `date` = '". time() ."'
-                        WHERE `sessionid` = ". $sessionid ."
-                        LIMIT 1";
-        			$wpdb->query($sql) ;
-        			break;
+					// Need to wait for "Completed" before processing
+					$sql =
+						"UPDATE `". WPSC_TABLE_PURCHASE_LOGS ."`
+						SET `transactid` = '". $transaction_id ."', `date` = '". time() ."'
+						WHERE `sessionid` = ". $sessionid ."
+						LIMIT 1";
+					$wpdb->query($sql) ;
+					break;
 
-    			default:
-                    // If unknown status, do nothing (safest course of action)
-    			break;
-            }
-        }
+				default:
+					// If unknown status, do nothing (safest course of action)
+				break;
+			}
+		}
 
 
-        // If an error occurred
-        if( $pnError )
-        {
-            pnlog( 'Error occurred: '. $pnErrMsg );
-            pnlog( 'Sending email notification' );
+		// If an error occurred
+		if( $pnError )
+		{
+			pnlog( 'Error occurred: '. $pnErrMsg );
+			pnlog( 'Sending email notification' );
 
-             // Send an email
-            $subject = "Sage Pay Now IPN error: ". $pnErrMsg;
-            $body =
-                "Hi,\n\n".
-                "An invalid Sage Pay Now transaction on your website requires attention\n".
-                "----------------------------------------------------------------------\n".
-                "Site: ". $vendor_name ." (". $vendor_url .")\n".
-                "Remote IP Address: ".$_SERVER['REMOTE_ADDR']."\n".
-                "Remote host name: ". gethostbyaddr( $_SERVER['REMOTE_ADDR'] ) ."\n".
-                "Purchase ID: ". $purchase['id'] ."\n".
-                "User ID: ". $purchase['user_ID'] ."\n";
-            if( isset( $pnData['RequestTrace'] ) )
-                $body .= "Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n";
-            if( isset( $pnData['payment_status'] ) )
-                $body .= "Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n";
-            $body .=
-                "\nError: ". $pnErrMsg ."\n";
+			 // Send an email
+			$subject = "Sage Pay Now IPN error: ". $pnErrMsg;
+			$body =
+				"Hi,\n\n".
+				"An invalid Sage Pay Now transaction on your website requires attention\n".
+				"----------------------------------------------------------------------\n".
+				"Site: ". $vendor_name ." (". $vendor_url .")\n".
+				"Remote IP Address: ".$_SERVER['REMOTE_ADDR']."\n".
+				"Remote host name: ". gethostbyaddr( $_SERVER['REMOTE_ADDR'] ) ."\n".
+				"Purchase ID: ". $purchase['id'] ."\n".
+				"User ID: ". $purchase['user_ID'] ."\n";
+			if( isset( $pnData['RequestTrace'] ) )
+				$body .= "Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n";
+			if( isset( $pnData['payment_status'] ) )
+				$body .= "Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n";
+			$body .=
+				"\nError: ". $pnErrMsg ."\n";
 
-            switch( $pnErrMsg )
-            {
-                case PN_ERR_AMOUNT_MISMATCH:
-                    $body .=
-                        "Value received : ". $pnData['Amount'] ."\n".
-                        "Value should be: ". $purchase['totalprice'];
-                    break;
+			switch( $pnErrMsg )
+			{
+				case PN_ERR_AMOUNT_MISMATCH:
+					$body .=
+						"Value received : ". $pnData['Amount'] ."\n".
+						"Value should be: ". $purchase['totalprice'];
+					break;
 
-                case PN_ERR_ORDER_ID_MISMATCH:
-                    $body .=
-                        "Value received : ". $pnOrderId ."\n".
-                        "Value should be: ". $purchase['id'];
-                    break;
+				case PN_ERR_ORDER_ID_MISMATCH:
+					$body .=
+						"Value received : ". $pnOrderId ."\n".
+						"Value should be: ". $purchase['id'];
+					break;
 
-                case PN_ERR_SESSION_ID_MISMATCH:
-                    $body .=
-                        "Value received : ". $pnData['Extra2'] ."\n".
-                        "Value should be: ". $purchase['sessionid'];
-                    break;
+				case PN_ERR_SESSION_ID_MISMATCH:
+					$body .=
+						"Value received : ". $pnData['Extra2'] ."\n".
+						"Value should be: ". $purchase['sessionid'];
+					break;
 
-                // For all other errors there is no need to add additional information
-                default:
-                    break;
-            }
+				// For all other errors there is no need to add additional information
+				default:
+					break;
+			}
 
-            mail( $pnDebugEmail, $subject, $body );
-        }
+			mail( $pnDebugEmail, $subject, $body );
+		}
 
-        // Close log
-        // pnlog( '', true );
-        return !$pnError;
-    	// exit();
-   	// }
+		// Close log
+		// pnlog( '', true );
+		return !$pnError;
+		// exit();
+	// }
 }
 
 /**
@@ -488,36 +488,36 @@ function pn_sagepaynow_ipn()
  */
 function submit_sagepaynow()
 {
-    if( isset( $_POST['sagepaynow_service_key'] ) )
-        update_option( 'sagepaynow_service_key', $_POST['sagepaynow_service_key'] );
+	if( isset( $_POST['sagepaynow_service_key'] ) )
+		update_option( 'sagepaynow_service_key', $_POST['sagepaynow_service_key'] );
 
-    if( isset( $_POST['sagepaynow_currcode'] ) && !empty( $_POST['sagepaynow_currcode'] ) )
-        update_option( 'sagepaynow_currcode', $_POST['sagepaynow_currcode'] );
-
-
-    if( isset( $_POST['sagepaynow_pending_status'] )  )
-        update_option( 'sagepaynow_pending_status', (int)$_POST['sagepaynow_pending_status'] );
-
-    if( isset( $_POST['sagepaynow_complete_status'] )  )
-        update_option( 'sagepaynow_complete_status', (int)$_POST['sagepaynow_complete_status'] );
+	if( isset( $_POST['sagepaynow_currcode'] ) && !empty( $_POST['sagepaynow_currcode'] ) )
+		update_option( 'sagepaynow_currcode', $_POST['sagepaynow_currcode'] );
 
 
-    if( isset( $_POST['sagepaynow_debug'] ) )
-        update_option( 'sagepaynow_debug', (int)$_POST['sagepaynow_debug'] );
+	if( isset( $_POST['sagepaynow_pending_status'] )  )
+		update_option( 'sagepaynow_pending_status', (int)$_POST['sagepaynow_pending_status'] );
 
-    if( isset( $_POST['sagepaynow_debug_email'] ) )
-        update_option( 'sagepaynow_debug_email', $_POST['sagepaynow_debug_email'] );
+	if( isset( $_POST['sagepaynow_complete_status'] )  )
+		update_option( 'sagepaynow_complete_status', (int)$_POST['sagepaynow_complete_status'] );
 
-     if( isset( $_POST['sagepaynow_success_email'] ) )
-        update_option( 'sagepaynow_success_email', $_POST['sagepaynow_success_email'] );
 
-    if( isset( $_POST['sagepaynow_email_admin_on_success'] ) )
-        update_option( 'sagepaynow_email_admin_on_success', $_POST['sagepaynow_email_admin_on_success'] );
+	if( isset( $_POST['sagepaynow_debug'] ) )
+		update_option( 'sagepaynow_debug', (int)$_POST['sagepaynow_debug'] );
 
-    foreach( (array)$_POST['sagepaynow_form'] as $form => $value )
-        update_option( ( 'sagepaynow_form_'.$form ), $value );
+	if( isset( $_POST['sagepaynow_debug_email'] ) )
+		update_option( 'sagepaynow_debug_email', $_POST['sagepaynow_debug_email'] );
 
-    return( true );
+	 if( isset( $_POST['sagepaynow_success_email'] ) )
+		update_option( 'sagepaynow_success_email', $_POST['sagepaynow_success_email'] );
+
+	if( isset( $_POST['sagepaynow_email_admin_on_success'] ) )
+		update_option( 'sagepaynow_email_admin_on_success', $_POST['sagepaynow_email_admin_on_success'] );
+
+	foreach( (array)$_POST['sagepaynow_form'] as $form => $value )
+		update_option( ( 'sagepaynow_form_'.$form ), $value );
+
+	return( true );
 }
 
 /**
@@ -529,199 +529,196 @@ function submit_sagepaynow()
  */
 function form_sagepaynow()
 {
-    // Variable declaration
-    global $wpdb, $wpsc_gateways;
+	// Variable declaration
+	global $wpdb, $wpsc_gateways;
 
-    // Set defaults
-    $options = array();
+	// Set defaults
+	$options = array();
 
-    $options['service_key'] = ( get_option( 'sagepaynow_service_key' ) != '' ) ?
-        get_option( 'sagepaynow_service_key' ) : 'c668242b-2dd7-46c6-b153-3f572d531be';
+	$options['service_key'] = ( get_option( 'sagepaynow_service_key' ) != '' ) ?
+		get_option( 'sagepaynow_service_key' ) : 'c668242b-2dd7-46c6-b153-3f572d531be';
 
-    $options['pending_status'] = ( get_option( 'sagepaynow_pending_status' ) != '' ) ?
-        get_option( 'sagepaynow_pending_status' ) : 1;
-    $options['complete_status'] = ( get_option( 'sagepaynow_complete_status' ) != '' ) ?
-        get_option( 'sagepaynow_complete_status' ) : 3;
+	$options['pending_status'] = ( get_option( 'sagepaynow_pending_status' ) != '' ) ?
+		get_option( 'sagepaynow_pending_status' ) : 1;
+	$options['complete_status'] = ( get_option( 'sagepaynow_complete_status' ) != '' ) ?
+		get_option( 'sagepaynow_complete_status' ) : 3;
 
-    $options['debug'] = ( (int)get_option( 'sagepaynow_debug' ) != '' ) ?
-        get_option( 'sagepaynow_debug' ) : 0;
-    $options['debug_email'] = ( get_option( 'sagepaynow_debug_email' ) != '' ) ?
-        get_option( 'sagepaynow_debug_email' ) : get_option('admin_email');
+	$options['debug'] = ( (int)get_option( 'sagepaynow_debug' ) != '' ) ?
+		get_option( 'sagepaynow_debug' ) : 0;
+	$options['debug_email'] = ( get_option( 'sagepaynow_debug_email' ) != '' ) ?
+		get_option( 'sagepaynow_debug_email' ) : get_option('admin_email');
 
-    $options['email_admin_on_success'] = ( get_option( 'sagepaynow_email_admin_on_success' ) != '' ) ?
-        get_option( 'sagepaynow_email_admin_on_success' ) : 1;
+	$options['email_admin_on_success'] = ( get_option( 'sagepaynow_email_admin_on_success' ) != '' ) ?
+		get_option( 'sagepaynow_email_admin_on_success' ) : 1;
 
-    $options['success_email'] = ( get_option( 'sagepaynow_success_email' ) != '' ) ?
-        get_option( 'sagepaynow_success_email' ) : get_option('admin_email');
+	$options['success_email'] = ( get_option( 'sagepaynow_success_email' ) != '' ) ?
+		get_option( 'sagepaynow_success_email' ) : get_option('admin_email');
 
-    $options['form_name_first'] = ( get_option( 'sagepaynow_form_name_first' ) != '' ) ?
-        get_option( 'sagepaynow_form_name_first' ) : 2;
-    $options['form_name_last'] = ( get_option( 'sagepaynow_form_name_last' ) != '' ) ?
-        get_option( 'sagepaynow_form_name_last' ) : 3;
+	$options['form_name_first'] = ( get_option( 'sagepaynow_form_name_first' ) != '' ) ?
+		get_option( 'sagepaynow_form_name_first' ) : 2;
+	$options['form_name_last'] = ( get_option( 'sagepaynow_form_name_last' ) != '' ) ?
+		get_option( 'sagepaynow_form_name_last' ) : 3;
 
-    // Generate output
-    $output = '
-        <tr>
-      	  <td colspan="2">
-      	    <span  class="wpscsmall description">
-            Please <a href="https://www.sagepay.co.za/user/register" target="_blank">register</a> on
-            <a href="https://www.sagepay.co.za" target="_blank">Sage Pay Now</a> to use this module.
-            Your <em>Service Key</em> are available on your
-            <a href="http://www.sagepay.co.za/acc/integration" target="_blank">Integration page</a> on the Sage Pay Now website.</span>
-      	  </td>
-        </tr>
+	// Generate output
+	$output = '
+		<tr>
+		  <td colspan="2">
+			<span  class="wpscsmall description">
+			Please register with <a href="https://sagepay.co.za/" target="_blank">Sage Pay</a> to use this module. You will require a Pay Now Service Key which is available from your Sage Connect -> Pay Now section on your Sage Pay <a href="https://merchant.sagepay.co.za/" target="_blank">Merchant Account</a>.
+		  </td>
+		</tr>
 
-        <tr>
-          <td>Service Key:</td>
-          <td>
-            <input type="text" size="40" value="'. $options['service_key'] .'" name="sagepaynow_service_key" /> <br />
-          </td>
-        </tr>'."\n";
+		<tr>
+		  <td>Service Key:</td>
+		  <td>
+			<input type="text" size="40" value="'. $options['service_key'] .'" name="sagepaynow_service_key" /> <br />
+		  </td>
+		</tr>'."\n";
 
-    // Get list of purchase statuses
-    global $wpsc_purchlog_statuses;
-    // pnlog( "Purchase Statuses:\n". print_r( $wpsc_purchlog_statuses, true ) );
+	// Get list of purchase statuses
+	global $wpsc_purchlog_statuses;
+	// pnlog( "Purchase Statuses:\n". print_r( $wpsc_purchlog_statuses, true ) );
 
-    $output .= '
-        <tr>
-          <td>Status for Pending Payments:</td>
-          <td>
-            <select name="sagepaynow_pending_status">';
+	$output .= '
+		<tr>
+		  <td>Status for Pending Payments:</td>
+		  <td>
+			<select name="sagepaynow_pending_status">';
 
-    foreach( $wpsc_purchlog_statuses as $status )
-        $output .= '<option value="'. $status['order'] .'" '. ( ( $status['order'] == $options['pending_status'] ) ? 'selected' : '' ) .'>'. $status['label'] .'</option>';
+	foreach( $wpsc_purchlog_statuses as $status )
+		$output .= '<option value="'. $status['order'] .'" '. ( ( $status['order'] == $options['pending_status'] ) ? 'selected' : '' ) .'>'. $status['label'] .'</option>';
 
-    $output .= '
-            </select>
-          </td>
-        </tr>
-        <tr>
-          <td>Status for Successful Payments:</td>
-          <td>
-            <select name="sagepaynow_complete_status">';
+	$output .= '
+			</select>
+		  </td>
+		</tr>
+		<tr>
+		  <td>Status for Successful Payments:</td>
+		  <td>
+			<select name="sagepaynow_complete_status">';
 
-    foreach( $wpsc_purchlog_statuses as $status )
-        $output .= '<option value="'. $status['order'] .'" '. ( ( $status['order'] == $options['complete_status'] ) ? 'selected' : '' ) .'>'. $status['label'] .'</option>';
+	foreach( $wpsc_purchlog_statuses as $status )
+		$output .= '<option value="'. $status['order'] .'" '. ( ( $status['order'] == $options['complete_status'] ) ? 'selected' : '' ) .'>'. $status['label'] .'</option>';
 
-    $output .= '
-            </select>
-          </td>
-        </tr>
-        <tr>
-        <td>Send Email on Payment Success:</td>
-        <td> <input type="radio" value="1" name="sagepaynow_email_admin_on_success" id="email_admin_on_success1" '. ( $options['email_admin_on_success'] == 1 ? 'checked' : '' ) .' />
-              <label for="email_admin_on_success1">On</label>&nbsp;
-            <input type="radio" value="0" name="sagepaynow_email_admin_on_success" id="email_admin_on_success2" '. ( $options['email_admin_on_success'] == 0 ? 'checked' : '' ) .' />
-              <label for="email_admin_on_success2">Off</label></td>
-        </tr>
-        <tr>
-           <td>Payment Success Email:</td>
-           <td> <input type="text" size="40" name="sagepaynow_success_email" value="'. $options['success_email'] .'" /></td>
-        </tr>
-        <tr>
-          <td>Debugging:</td>
-          <td>
-            <input type="radio" value="1" name="sagepaynow_debug" id="sagepaynow_debug1" '. ( $options['debug'] == 1 ? 'checked' : '' ) .' />
-              <label for="sagepaynow_debug1">On</label>&nbsp;
-            <input type="radio" value="0" name="sagepaynow_debug" id="sagepaynow_debug2" '. ( $options['debug'] == 0 ? 'checked' : '' ) .' />
-              <label for="sagepaynow_debug2">Off</label>
-         </td>
-        </tr>
-        <tr>
-          <td>Debug Email:</td>
-          <td>
-            <input type="text" size="40" name="sagepaynow_debug_email" value="'. $options['debug_email'] .'" />
-          </td>
-        </tr>';
+	$output .= '
+			</select>
+		  </td>
+		</tr>
+		<tr>
+		<td>Send Email on Payment Success:</td>
+		<td> <input type="radio" value="1" name="sagepaynow_email_admin_on_success" id="email_admin_on_success1" '. ( $options['email_admin_on_success'] == 1 ? 'checked' : '' ) .' />
+			  <label for="email_admin_on_success1">On</label>&nbsp;
+			<input type="radio" value="0" name="sagepaynow_email_admin_on_success" id="email_admin_on_success2" '. ( $options['email_admin_on_success'] == 0 ? 'checked' : '' ) .' />
+			  <label for="email_admin_on_success2">Off</label></td>
+		</tr>
+		<tr>
+		   <td>Payment Success Email:</td>
+		   <td> <input type="text" size="40" name="sagepaynow_success_email" value="'. $options['success_email'] .'" /></td>
+		</tr>
+		<tr>
+		  <td>Debugging:</td>
+		  <td>
+			<input type="radio" value="1" name="sagepaynow_debug" id="sagepaynow_debug1" '. ( $options['debug'] == 1 ? 'checked' : '' ) .' />
+			  <label for="sagepaynow_debug1">On</label>&nbsp;
+			<input type="radio" value="0" name="sagepaynow_debug" id="sagepaynow_debug2" '. ( $options['debug'] == 0 ? 'checked' : '' ) .' />
+			  <label for="sagepaynow_debug2">Off</label>
+		 </td>
+		</tr>
+		<tr>
+		  <td>Debug Email:</td>
+		  <td>
+			<input type="text" size="40" name="sagepaynow_debug_email" value="'. $options['debug_email'] .'" />
+		  </td>
+		</tr>';
 
-    // Get current store currency
-    $sql =
-        "SELECT `code`, `currency`
-        FROM `". WPSC_TABLE_CURRENCY_LIST ."`
-        WHERE `id` IN ('". absint( get_option( 'currency_type' ) ) ."')";
-    $store_curr_data = $wpdb->get_row( $sql, ARRAY_A );
+	// Get current store currency
+	$sql =
+		"SELECT `code`, `currency`
+		FROM `". WPSC_TABLE_CURRENCY_LIST ."`
+		WHERE `id` IN ('". absint( get_option( 'currency_type' ) ) ."')";
+	$store_curr_data = $wpdb->get_row( $sql, ARRAY_A );
 
-    $current_curr = get_option( 'sagepaynow_currcode' );
+	$current_curr = get_option( 'sagepaynow_currcode' );
 
-    if( empty( $current_curr ) && in_array( $store_curr_data['code'], $wpsc_gateways['sagepaynow']['supported_currencies']['currency_list'] ) )
-    {
-        update_option( 'sagepaynow_currcode', $store_curr_data['code'] );
-        $current_curr = $store_curr_data['code'];
-    }
+	if( empty( $current_curr ) && in_array( $store_curr_data['code'], $wpsc_gateways['sagepaynow']['supported_currencies']['currency_list'] ) )
+	{
+		update_option( 'sagepaynow_currcode', $store_curr_data['code'] );
+		$current_curr = $store_curr_data['code'];
+	}
 
 	if( $current_curr != $store_curr_data['code'] )
-    {
+	{
 		$output .= '
-            <tr>
-                <td colspan="2"><br></td>
-            </tr>
-            <tr>
-                <td colspan="2"><strong class="form_group">Currency Converter</td>
-            </tr>
-            <tr>
-        		<td colspan="2">Your website uses <strong>'. $store_curr_data['currency'] .'</strong>.
-                    This currency is not supported by Sage Pay Now, please select a currency using the drop
-                    down menu below. Buyers on your site will still pay in your local currency however
-                    we will send the order through to Sage Pay Now using the currency below:</td>
-            </tr>
-            <tr>
-                <td>Select Currency:</td>
-                <td>
-                    <select name="sagepaynow_currcode">';
+			<tr>
+				<td colspan="2"><br></td>
+			</tr>
+			<tr>
+				<td colspan="2"><strong class="form_group">Currency Converter</td>
+			</tr>
+			<tr>
+				<td colspan="2">Your website uses <strong>'. $store_curr_data['currency'] .'</strong>.
+					This currency is not supported by Sage Pay Now, please select a currency using the drop
+					down menu below. Buyers on your site will still pay in your local currency however
+					we will send the order through to Sage Pay Now using the currency below:</td>
+			</tr>
+			<tr>
+				<td>Select Currency:</td>
+				<td>
+					<select name="sagepaynow_currcode">';
 
 		$pn_curr_list = $wpsc_gateways['sagepaynow']['supported_currencies']['currency_list'];
 
-        $sql =
-            "SELECT DISTINCT `code`, `currency`
-            FROM `". WPSC_TABLE_CURRENCY_LIST ."`
-            WHERE `code` IN ('". implode( "','", $pn_curr_list )."')";
+		$sql =
+			"SELECT DISTINCT `code`, `currency`
+			FROM `". WPSC_TABLE_CURRENCY_LIST ."`
+			WHERE `code` IN ('". implode( "','", $pn_curr_list )."')";
 		$curr_list = $wpdb->get_results( $sql, ARRAY_A );
 
 		foreach( $curr_list as $curr_item )
-        {
+		{
 			$output .= "<option value='". $curr_item['code'] ."' ".
-                ( $current_curr == $curr_item['code'] ? 'selected' : '' ) .">". $curr_item['currency'] ."</option>";
+				( $current_curr == $curr_item['code'] ? 'selected' : '' ) .">". $curr_item['currency'] ."</option>";
 		}
 
-        $output .=
-            '   </select>
-                </td>
-            </tr>';
+		$output .=
+			'   </select>
+				</td>
+			</tr>';
 	}
 
-    $output .= '
-        <tr class="update_gateway" >
-        	<td colspan="2">
-        		<div class="submit">
-        		<input type="submit" value="'. TXT_WPSC_UPDATE_BUTTON .'" name="updateoption"/>
-        	</div>
-        	</td>
-        </tr>
+	$output .= '
+		<tr class="update_gateway" >
+			<td colspan="2">
+				<div class="submit">
+				<input type="submit" value="'. TXT_WPSC_UPDATE_BUTTON .'" name="updateoption"/>
+			</div>
+			</td>
+		</tr>
 
-        <tr class="firstrowth">
-        	<td style="border-bottom: medium none;" colspan="2">
-        		<strong class="form_group">Fields Sent to Sage Pay Now</strong>
-        	</td>
-        </tr>
+		<tr class="firstrowth">
+			<td style="border-bottom: medium none;" colspan="2">
+				<strong class="form_group">Fields Sent to Sage Pay Now</strong>
+			</td>
+		</tr>
 
-        <tr>
-            <td>First Name Field</td>
-            <td>
-              <select name="sagepaynow_form[name_first]">
-              '. nzshpcrt_form_field_list( $options['form_name_first'] ) .'
-              </select>
-            </td>
-        </tr>
-        <tr>
-            <td>Last Name Field</td>
-            <td>
-              <select name="sagepaynow_form[name_last]">
-              '. nzshpcrt_form_field_list( $options['form_name_last'] ) .'
-              </select>
-            </td>
-        </tr>';
+		<tr>
+			<td>First Name Field</td>
+			<td>
+			  <select name="sagepaynow_form[name_first]">
+			  '. nzshpcrt_form_field_list( $options['form_name_first'] ) .'
+			  </select>
+			</td>
+		</tr>
+		<tr>
+			<td>Last Name Field</td>
+			<td>
+			  <select name="sagepaynow_form[name_last]">
+			  '. nzshpcrt_form_field_list( $options['form_name_last'] ) .'
+			  </select>
+			</td>
+		</tr>';
 
-    return $output;
+	return $output;
 }
 
 // Add IPN check to WordPress init
