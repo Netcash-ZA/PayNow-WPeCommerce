@@ -41,14 +41,14 @@ A. Sage Pay Now Gateway Configuration Steps:
 7. Click "Allow credit card payments:"
 
 8. The Accept, Decline, Notify and Redirect URLs should all be:
-	http://YOUR_wp_ecommerce_DOMAIN.com/paynow.php
+	http://YOUR_wp_ecommerce_DOMAIN.com/wp-content/plugins/wp-e-commerce/wpsc-merchants/paynow_callback.php
 
 9. It is highly recommended that you "Make test mode active:" while you are still testing your site.
 
 B. WP e-Commerce Steps:
 
 1. Unzip the module to a temporary location on your computer
-2. Copy the “wp-content” folder in the archive to your base “wordpress” folder
+2. Copy the “wp-e-commerce” folder in the archive to your WordPress plugins folder (/wp-content/plugns)
 3. This should NOT overwrite any existing files or folders and merely supplement them with the PayNow files
 4. This is however, dependent on the FTP program you use
 5. Log into WP e-commerce as admin (http://wpecommerce_installation/wp-admin)
@@ -62,17 +62,9 @@ B. WP e-Commerce Steps:
 
 You are now ready to transact. Remember to turn of "Make test mode active:" when you are ready to go live.
 
-Revision History
-----------------
+Issues & Feature Requests
+-------------------------
 
-* 07 Aug 2015/1.1.0	 Fix errors
-* 11 May 2014/1.0.0	 First production release
-* 16 Apr 2014/0.9 (BETA) First beta
+We welcome your feedback.
 
-Tested with WP e-Commerce versions:
-3.8.14.1
-
-Feedback, issues & feature requests
------------------------------------
-
-We welcome you comments and suggestions. If you have any feedback please contact Sage Pay South Africa or log an issue on GitHub.
+Please contact Sage Pay South Africa with any questions or issues.

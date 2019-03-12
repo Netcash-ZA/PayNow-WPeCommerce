@@ -1,13 +1,17 @@
 <?php
-/*
- * TODO Add direct link to Sage Pay Now
-  Plugin Name: sagepaynow.php
-  Plugin URI: www.sagepay.co.za
-  Description: This plugin enables WP e-Commerce to interact with the Sage Pay Now payment gateway
- */
- /**
- *
- */
+
+/**
+ * Plugin Name: WP eCommerce Sage Pay Now
+ * Plugin URI: https://sagepay.co.za/
+ * Description: A payment gateway for South African payment system, Sage Pay Now.
+ * Version: 2.0
+ * Author: Sage Pay
+ * Author URI: https://sagepay.co.za/
+**/
+
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 
 // Set gateway variables for WP e-Commerce
 $nzshpcrt_gateways[$num]['name'] = 'Sage Pay Now';
@@ -22,6 +26,12 @@ $nzshpcrt_gateways[$num]['supported_currencies']['option_name'] = 'sagepaynow_cu
 // Include the Sage Pay Now common file
 define( 'PN_DEBUG', ( get_option('sagepaynow_debug') == 1  ? true : false ) );
 require_once( 'sagepaynow_common.inc' );
+require_once(dirname(__FILE__).'/PayNowValidator.php');
+
+function pn_flash_error_notice($message = '') {
+	$_SESSION['pn_error'] = "{$message} Please contact your Sage Pay Account manager on 0861 338 338 for assistance.";
+}
+
 
 /**
  * gateway_sagepaynow()
@@ -488,8 +498,34 @@ function pn_sagepaynow_ipn()
  */
 function submit_sagepaynow()
 {
-	if( isset( $_POST['sagepaynow_service_key'] ) )
-		update_option( 'sagepaynow_service_key', $_POST['sagepaynow_service_key'] );
+
+	$account_number = isset( $_POST['sagepaynow_account_number'] ) ? $_POST['sagepaynow_account_number'] : '';
+	$service_key = isset( $_POST['sagepaynow_service_key'] ) ? $_POST['sagepaynow_service_key'] : '';
+
+	if( $account_number && $service_key ) {
+		$Validator = new SagePay\PayNowValidator();
+		$Validator->setVendorKey('7f7a86f8-5642-4595-8824-aa837fc584f2');
+
+		try {
+			$result = $Validator->validate_paynow_service_key($account_number, $service_key);
+			if( $result !== true ) {
+
+				pn_flash_error_notice((isset($result[$service_key]) ? $result[$service_key] : "<strong>Service Key</strong> {$result}"));
+				return false;
+
+			} else {
+				// Success
+				update_option( 'sagepaynow_account_number', $account_number );
+				update_option( 'sagepaynow_service_key', $service_key );
+			}
+		} catch(\Exception $e) {
+			pn_flash_error_notice($e->getMessage());
+			return false;
+		}
+	} else {
+		pn_flash_error_notice('Account number and service key required.');
+		return false;
+	}
 
 	if( isset( $_POST['sagepaynow_currcode'] ) && !empty( $_POST['sagepaynow_currcode'] ) )
 		update_option( 'sagepaynow_currcode', $_POST['sagepaynow_currcode'] );
@@ -535,6 +571,9 @@ function form_sagepaynow()
 	// Set defaults
 	$options = array();
 
+	$options['account_number'] = ( get_option( 'sagepaynow_account_number' ) != '' ) ?
+		get_option( 'sagepaynow_account_number' ) : '';
+
 	$options['service_key'] = ( get_option( 'sagepaynow_service_key' ) != '' ) ?
 		get_option( 'sagepaynow_service_key' ) : 'c668242b-2dd7-46c6-b153-3f572d531be';
 
@@ -559,8 +598,23 @@ function form_sagepaynow()
 	$options['form_name_last'] = ( get_option( 'sagepaynow_form_name_last' ) != '' ) ?
 		get_option( 'sagepaynow_form_name_last' ) : 3;
 
+	if (isset($_SESSION['pn_error'] )) { ?>
+		<div class="error notice">
+			<p class=""><?php echo $_SESSION['pn_error']; ?></p>
+		</div>
+		<?php unset($_SESSION['pn_error']); ?>
+	<?php }
+
 	// Generate output
 	$output = '
+		<tr>
+		  <td>Account Number:</td>
+		  <td>
+			<input type="text" size="40" value="'. $options['account_number'] .'" name="sagepaynow_account_number" /> <br />
+		  </td>
+		</tr>'."\n";
+
+	$output .= '
 		<tr>
 		  <td colspan="2">
 			<span  class="wpscsmall description">
@@ -724,4 +778,3 @@ function form_sagepaynow()
 
 // Add IPN check to WordPress init
 // add_action( 'init', 'pn_sagepaynow_ipn' );
-?>
