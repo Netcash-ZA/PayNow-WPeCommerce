@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Plugin Name: WP eCommerce Sage Pay Now
- * Plugin URI: https://sagepay.co.za/
- * Description: A payment gateway for South African payment system, Sage Pay Now.
+ * Plugin Name: WP eCommerce Netcash Pay Now
+ * Plugin URI: https://netcash.co.za/
+ * Description: A payment gateway for South African payment system, Netcash Pay Now.
  * Version: 2.0
- * Author: Sage Pay
- * Author URI: https://sagepay.co.za/
+ * Author: Netcash
+ * Author URI: https://netcash.co.za/
 **/
 
 // ini_set('display_errors', 1);
@@ -14,27 +14,26 @@
 // error_reporting(E_ALL);
 
 // Set gateway variables for WP e-Commerce
-$nzshpcrt_gateways[$num]['name'] = 'Sage Pay Now';
-$nzshpcrt_gateways[$num]['internalname'] = 'sagepaynow';
-$nzshpcrt_gateways[$num]['function'] = 'gateway_sagepaynow';
-$nzshpcrt_gateways[$num]['form'] = "form_sagepaynow";
-$nzshpcrt_gateways[$num]['submit_function'] = "submit_sagepaynow";
-$nzshpcrt_gateways[$num]['payment_type'] = "sagepaynow";
+$nzshpcrt_gateways[$num]['name'] = 'Netcash Pay Now';
+$nzshpcrt_gateways[$num]['internalname'] = 'netcash_paynow';
+$nzshpcrt_gateways[$num]['function'] = 'gateway_netcash_paynow';
+$nzshpcrt_gateways[$num]['form'] = "form_netcash_paynow";
+$nzshpcrt_gateways[$num]['submit_function'] = "submit_netcash_paynow";
+$nzshpcrt_gateways[$num]['payment_type'] = "netcash_paynow";
 $nzshpcrt_gateways[$num]['supported_currencies']['currency_list'] = array( 'ZAR' );
-$nzshpcrt_gateways[$num]['supported_currencies']['option_name'] = 'sagepaynow_currcode';
+$nzshpcrt_gateways[$num]['supported_currencies']['option_name'] = 'netcash_paynow_currcode';
 
-// Include the Sage Pay Now common file
-define( 'PN_DEBUG', ( get_option('sagepaynow_debug') == 1  ? true : false ) );
-require_once( 'sagepaynow_common.inc' );
+// Include the Netcash Pay Now common file
+require_once( 'paynow_common.inc' );
 require_once(dirname(__FILE__).'/PayNowValidator.php');
 
 function pn_flash_error_notice($message = '') {
-	$_SESSION['pn_error'] = "{$message} Please contact your Sage Pay Account manager on 0861 338 338 for assistance.";
+	$_SESSION['pn_error'] = "{$message} Please contact your Netcash Pay Now Account manager on 0861 338 338 for assistance.";
 }
 
 
 /**
- * gateway_sagepaynow()
+ * gateway_netcash_paynow()
  *
  * Create the form/information which is submitted to the gateway.
  *
@@ -42,7 +41,7 @@ function pn_flash_error_notice($message = '') {
  * @param mixed $sessionid Session ID for user session
  * @return
  */
-function gateway_sagepaynow( $sep, $sessionid )
+function gateway_netcash_paynow( $sep, $sessionid )
 {
 	// Variable declaration
 	global $wpdb, $wpsc_cart;
@@ -78,20 +77,20 @@ function gateway_sagepaynow( $sep, $sessionid )
 		WHERE `id` = '". get_option( 'currency_type' ) ."'
 		LIMIT 1";
 	$local_curr_code = $wpdb->get_var( $sql );
-	$pn_curr_code = get_option( 'sagepaynow_currcode' );
+	$pn_curr_code = get_option( 'netcash_paynow_currcode' );
 
 	// Set default currency
 	if( $pn_curr_code == '' )
 		$pn_curr_code = 'ZAR';
 
 	// Convert from the currency of the users shopping cart to the currency
-	// which the user has specified in their Sage Pay Now preferences.
+	// which the user has specified in their Netcash Pay Now preferences.
 	$curr = new CURRENCYCONVERTER();
 
 	$total = $wpsc_cart->calculate_total_price();
 	$discount = $wpsc_cart->coupons_amount;
 
-	// If Sage Pay Now currency differs from local currency
+	// If Netcash Pay Now currency differs from local currency
 	if( $pn_curr_code != $local_curr_code )
 	{
 		pnlog( 'Currency conversion required' );
@@ -123,33 +122,33 @@ function gateway_sagepaynow( $sep, $sessionid )
 		$pnDescription .= ' Total = '. number_format( $pnAmount, 2, '.', ',' );
 	}
 
-	$serviceKey = get_option( 'sagepaynow_service_key' );
-	$sagepaynow_url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
+	$serviceKey = get_option( 'netcash_paynow_service_key' );
+	$netcash_paynow_url = 'https://paynow.netcash.co.za/site/paynow.aspx';
 
 	// Create URLs
-	$returnUrl = get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid ."&gateway=sagepaynow";
+	$returnUrl = get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid ."&gateway=netcash_paynow";
 	$cancelUrl = get_option( 'transact_url' );
 	$notifyUrl = get_option( 'siteurl' ) .'/?ipn_request=true';
 
 	// Buyer details
-	if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_first')] ) )
-		$data['name_first'] = $_POST['collected_data'][get_option('sagepaynow_form_name_first')];
+	if( !empty( $_POST['collected_data'][get_option('netcash_paynow_form_name_first')] ) )
+		$data['name_first'] = $_POST['collected_data'][get_option('netcash_paynow_form_name_first')];
 
-	if( !empty( $_POST['collected_data'][get_option('sagepaynow_form_name_last')] ) )
-		$data['name_last'] = $_POST['collected_data'][get_option('sagepaynow_form_name_last')];
+	if( !empty( $_POST['collected_data'][get_option('netcash_paynow_form_name_last')] ) )
+		$data['name_last'] = $_POST['collected_data'][get_option('netcash_paynow_form_name_last')];
 
 	global $user_ID;
 
 	$customerName = "{$data['name_first']} {$data['name_last']}";
 	$orderID = $purchase['id'];
 	$customerID = $user_ID;
-	$sageGUID = "08693ef6-d77c-4504-976b-ea54be1f68d1";
+	$netcashGUID = "08693ef6-d77c-4504-976b-ea54be1f68d1";
 
 	// Construct variables for post
 	$data = array(
 		// Merchant details
 		'm1' => $serviceKey,
-		'm2' => $sageGUID,
+		'm2' => $netcashGUID,
 		// 'return_url' => $returnUrl,
 		// 'cancel_url' => $cancelUrl,
 		// 'notify_url' => $notifyUrl,
@@ -164,8 +163,9 @@ function gateway_sagepaynow( $sep, $sessionid )
 		'm5' => $sessionid,
 
 		'p3' => "{$customerName} | {$orderID}",
-		'm3' => "$sageGUID",
+		'm3' => "$netcashGUID",
 		'm4' => "{$customerID}",
+		'm14' => "1",
 
 		// Other details
 		// 'm6' => PN_USER_AGENT,
@@ -193,24 +193,24 @@ function gateway_sagepaynow( $sep, $sessionid )
 	// Display debugging information (if in debug mode)
 	if( PN_DEBUG || ( defined( 'WPSC_ADD_DEBUG_PAGE' ) && ( WPSC_ADD_DEBUG_PAGE == true ) ) )
 	{
-		echo "<a href='". $sagepaynow_url ."?". $pnOutput ."'>Test the URL here</a>";
+		echo "<a href='". $netcash_paynow_url ."?". $pnOutput ."'>Test the URL here</a>";
 		echo "<pre>". print_r( $data, true ) ."</pre>";
 		exit();
 	}
 
-	// Send to Sage Pay Now (GET)
-	header( "Location: ". $sagepaynow_url ."?". $pnOutput );
+	// Send to Netcash Pay Now (GET)
+	header( "Location: ". $netcash_paynow_url ."?". $pnOutput );
 	exit();
 }
 
 /**
- * pn_sagepaynow_ipn()
+ * pn_netcash_paynow_ipn()
  *
- * Handle IPN callback from Sage Pay Now
+ * Handle IPN callback from Netcash Pay Now
  *
  * @return
  */
-function pn_sagepaynow_ipn()
+function pn_netcash_paynow_ipn()
 {
 	// Check if this is an IPN request
 	// Has to be done like this (as opposed to "exit" as processing needs
@@ -222,7 +222,7 @@ function pn_sagepaynow_ipn()
 		$pnErrMsg = '';
 		$pnDone = false;
 		$pnData = array();
-		$pnHost = 'https://paynow.sagepay.co.za/site/paynow.aspx';
+		$pnHost = 'https://paynow.netcash.co.za/site/paynow.aspx';
 
 		$posted_id = $_POST['Reference']; //"Order #8-150819114657";
 		$pnOrderId = str_ireplace("Order #", "", $posted_id);
@@ -230,23 +230,23 @@ function pn_sagepaynow_ipn()
 		$pnParamString = '';
 
 		// Set debug email address
-		if( get_option( 'sagepaynow_debug_email' ) != '' )
-			$pnDebugEmail = get_option( 'sagepaynow_debug_email' );
+		if( get_option( 'netcash_paynow_debug_email' ) != '' )
+			$pnDebugEmail = get_option( 'netcash_paynow_debug_email' );
 		elseif( get_option( 'purch_log_email' ) != '' )
 			$pnDebugEmail = get_option( 'purch_log_email' );
 		else
 			$pnDebugEmail = get_option( 'admin_email' );
 
-		pnlog( 'Sage Pay Now IPN call received' );
+		pnlog( 'Netcash Pay Now IPN call received' );
 
-		//// Notify Sage Pay Now that information has been received
+		//// Notify Netcash Pay Now that information has been received
 		if( !$pnError && !$pnDone )
 		{
 			header( 'HTTP/1.0 200 OK' );
 			flush();
 		}
 
-		//// Get data sent by Sage Pay Now
+		//// Get data sent by Netcash Pay Now
 		if( !$pnError && !$pnDone )
 		{
 			pnlog( 'Get posted data' );
@@ -254,7 +254,7 @@ function pn_sagepaynow_ipn()
 			// Posted variables from IPN
 			$pnData = pnGetData();
 
-			pnlog( 'Sage Pay Now Data: '. print_r( $pnData, true ) );
+			pnlog( 'Netcash Pay Now Data: '. print_r( $pnData, true ) );
 
 			if( $pnData === false )
 			{
@@ -277,7 +277,7 @@ function pn_sagepaynow_ipn()
 
 			// Check if order has already been processed
 			// It has been "processed" if it has a status above "Order Received"
-			if( $purchase['processed'] > get_option( 'sagepaynow_pending_status' ) )
+			if( $purchase['processed'] > get_option( 'netcash_paynow_pending_status' ) )
 			{
 				pnlog( "Order has already been processed" );
 				$pnDone = true;
@@ -297,17 +297,17 @@ function pn_sagepaynow_ipn()
 				WHERE `id` = '". get_option( 'currency_type' ) ."'
 				LIMIT 1";
 			$local_curr_code = $wpdb->get_var( $sql );
-			$pn_curr_code = get_option( 'sagepaynow_currcode' );
+			$pn_curr_code = get_option( 'netcash_paynow_currcode' );
 
 			// Set default currency
 			if( $pn_curr_code == '' )
 				$pn_curr_code = 'ZAR';
 
 			// Convert from the currency of the users shopping cart to the currency
-			// which the user has specified in their Sage Pay Now preferences.
+			// which the user has specified in their Netcash Pay Now preferences.
 			$curr = new CURRENCYCONVERTER();
 
-			// If Sage Pay Now currency differs from local currency
+			// If Netcash Pay Now currency differs from local currency
 			if( $pn_curr_code != $local_curr_code )
 			{
 				$compare_price = $curr->convert( $purchase['totalprice'], $pn_curr_code, $local_curr_code );
@@ -351,7 +351,7 @@ function pn_sagepaynow_ipn()
 
 					// Update the purchase status
 					$data = array(
-						'processed' => get_option( 'sagepaynow_complete_status'),
+						'processed' => get_option( 'netcash_paynow_complete_status'),
 						'transactid' => $transaction_id,
 						'date' => time(),
 					);
@@ -360,20 +360,20 @@ function pn_sagepaynow_ipn()
 					transaction_results( $sessionid, false, $transaction_id );
 					$admin_email = get_option('admin_email');
 
-						$subject = "Sage Pay Now IPN on your site";
+						$subject = "Netcash Pay Now IPN on your site";
 						$body =
 							"Hi,\n\n".
-							"A Sage Pay Now transaction has been completed on your website\n".
+							"A Netcash Pay Now transaction has been completed on your website\n".
 							"------------------------------------------------------------\n".
 							"Site: ". $vendor_name ." (". $vendor_url .")\n".
 							"Purchase ID: ". $pnOrderId ."\n".
-							"Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
-							"Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n"."";
+							"Netcash Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
+							"Netcash Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n"."";
 							// "Order Status Code: ". $d['order_status'];
 
-					if(get_option('sagepaynow_email_admin_on_success') == 1)
+					if(get_option('netcash_paynow_email_admin_on_success') == 1)
 					{
-						mail( get_option('sagepaynow_success_email'), $subject, $body );
+						mail( get_option('netcash_paynow_success_email'), $subject, $body );
 					}
 					if( PN_DEBUG )
 					{
@@ -398,16 +398,16 @@ function pn_sagepaynow_ipn()
 					$wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pnOrderId ."')" );
 					$wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pnOrderId ."' LIMIT 1" );
 
-					$subject = "Sage Pay Now IPN Transaction on your site";
+					$subject = "Netcash Pay Now IPN Transaction on your site";
 					$body =
 						"Hi,\n\n".
-						"A failed Sage Pay Now transaction on your website requires attention\n".
+						"A failed Netcash Pay Now transaction on your website requires attention\n".
 						"------------------------------------------------------------\n".
 						"Site: ". $vendor_name ." (". $vendor_url .")\n".
 						"Purchase ID: ". $purchase['id'] ."\n".
 						"User ID: ". $purchase['user_ID'] ."\n".
-						"Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
-						"Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'];
+						"Netcash Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n".
+						"Netcash Pay Now Payment Status: ". $pnData['TransactionAccepted'];
 					mail( $pnDebugEmail, $subject, $body );
 					break;
 
@@ -437,10 +437,10 @@ function pn_sagepaynow_ipn()
 			pnlog( 'Sending email notification' );
 
 			 // Send an email
-			$subject = "Sage Pay Now IPN error: ". $pnErrMsg;
+			$subject = "Netcash Pay Now IPN error: ". $pnErrMsg;
 			$body =
 				"Hi,\n\n".
-				"An invalid Sage Pay Now transaction on your website requires attention\n".
+				"An invalid Netcash Pay Now transaction on your website requires attention\n".
 				"----------------------------------------------------------------------\n".
 				"Site: ". $vendor_name ." (". $vendor_url .")\n".
 				"Remote IP Address: ".$_SERVER['REMOTE_ADDR']."\n".
@@ -448,9 +448,9 @@ function pn_sagepaynow_ipn()
 				"Purchase ID: ". $purchase['id'] ."\n".
 				"User ID: ". $purchase['user_ID'] ."\n";
 			if( isset( $pnData['RequestTrace'] ) )
-				$body .= "Sage Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n";
+				$body .= "Netcash Pay Now Transaction ID: ". $pnData['RequestTrace'] ."\n";
 			if( isset( $pnData['payment_status'] ) )
-				$body .= "Sage Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n";
+				$body .= "Netcash Pay Now Payment Status: ". $pnData['TransactionAccepted'] ."\n";
 			$body .=
 				"\nError: ". $pnErrMsg ."\n";
 
@@ -490,20 +490,20 @@ function pn_sagepaynow_ipn()
 }
 
 /**
- * submit_sagepaynow()
+ * submit_netcash_paynow()
  *
- * Updates the options submitted by the config form (function "form_sagepaynow"}
+ * Updates the options submitted by the config form (function "form_netcash_paynow"}
  *
  * @return
  */
-function submit_sagepaynow()
+function submit_netcash_paynow()
 {
 
-	$account_number = isset( $_POST['sagepaynow_account_number'] ) ? $_POST['sagepaynow_account_number'] : '';
-	$service_key = isset( $_POST['sagepaynow_service_key'] ) ? $_POST['sagepaynow_service_key'] : '';
+	$account_number = isset( $_POST['netcash_paynow_account_number'] ) ? $_POST['netcash_paynow_account_number'] : '';
+	$service_key = isset( $_POST['netcash_paynow_service_key'] ) ? $_POST['netcash_paynow_service_key'] : '';
 
 	if( $account_number && $service_key ) {
-		$Validator = new SagePay\PayNowValidator();
+		$Validator = new netcash\PayNowValidator();
 		$Validator->setVendorKey('7f7a86f8-5642-4595-8824-aa837fc584f2');
 
 		try {
@@ -515,8 +515,8 @@ function submit_sagepaynow()
 
 			} else {
 				// Success
-				update_option( 'sagepaynow_account_number', $account_number );
-				update_option( 'sagepaynow_service_key', $service_key );
+				update_option( 'netcash_paynow_account_number', $account_number );
+				update_option( 'netcash_paynow_service_key', $service_key );
 			}
 		} catch(\Exception $e) {
 			pn_flash_error_notice($e->getMessage());
@@ -527,43 +527,43 @@ function submit_sagepaynow()
 		return false;
 	}
 
-	if( isset( $_POST['sagepaynow_currcode'] ) && !empty( $_POST['sagepaynow_currcode'] ) )
-		update_option( 'sagepaynow_currcode', $_POST['sagepaynow_currcode'] );
+	if( isset( $_POST['netcash_paynow_currcode'] ) && !empty( $_POST['netcash_paynow_currcode'] ) )
+		update_option( 'netcash_paynow_currcode', $_POST['netcash_paynow_currcode'] );
 
 
-	if( isset( $_POST['sagepaynow_pending_status'] )  )
-		update_option( 'sagepaynow_pending_status', (int)$_POST['sagepaynow_pending_status'] );
+	if( isset( $_POST['netcash_paynow_pending_status'] )  )
+		update_option( 'netcash_paynow_pending_status', (int)$_POST['netcash_paynow_pending_status'] );
 
-	if( isset( $_POST['sagepaynow_complete_status'] )  )
-		update_option( 'sagepaynow_complete_status', (int)$_POST['sagepaynow_complete_status'] );
+	if( isset( $_POST['netcash_paynow_complete_status'] )  )
+		update_option( 'netcash_paynow_complete_status', (int)$_POST['netcash_paynow_complete_status'] );
 
 
-	if( isset( $_POST['sagepaynow_debug'] ) )
-		update_option( 'sagepaynow_debug', (int)$_POST['sagepaynow_debug'] );
+	if( isset( $_POST['netcash_paynow_debug'] ) )
+		update_option( 'netcash_paynow_debug', (int)$_POST['netcash_paynow_debug'] );
 
-	if( isset( $_POST['sagepaynow_debug_email'] ) )
-		update_option( 'sagepaynow_debug_email', $_POST['sagepaynow_debug_email'] );
+	if( isset( $_POST['netcash_paynow_debug_email'] ) )
+		update_option( 'netcash_paynow_debug_email', $_POST['netcash_paynow_debug_email'] );
 
-	 if( isset( $_POST['sagepaynow_success_email'] ) )
-		update_option( 'sagepaynow_success_email', $_POST['sagepaynow_success_email'] );
+	 if( isset( $_POST['netcash_paynow_success_email'] ) )
+		update_option( 'netcash_paynow_success_email', $_POST['netcash_paynow_success_email'] );
 
-	if( isset( $_POST['sagepaynow_email_admin_on_success'] ) )
-		update_option( 'sagepaynow_email_admin_on_success', $_POST['sagepaynow_email_admin_on_success'] );
+	if( isset( $_POST['netcash_paynow_email_admin_on_success'] ) )
+		update_option( 'netcash_paynow_email_admin_on_success', $_POST['netcash_paynow_email_admin_on_success'] );
 
-	foreach( (array)$_POST['sagepaynow_form'] as $form => $value )
-		update_option( ( 'sagepaynow_form_'.$form ), $value );
+	foreach( (array)$_POST['netcash_paynow_form'] as $form => $value )
+		update_option( ( 'netcash_paynow_form_'.$form ), $value );
 
 	return( true );
 }
 
 /**
- * form_sagepaynow()
+ * form_netcash_paynow()
  *
  * Displays the configuration form for the admin area.
  *
  * @return
  */
-function form_sagepaynow()
+function form_netcash_paynow()
 {
 	// Variable declaration
 	global $wpdb, $wpsc_gateways;
@@ -571,32 +571,32 @@ function form_sagepaynow()
 	// Set defaults
 	$options = array();
 
-	$options['account_number'] = ( get_option( 'sagepaynow_account_number' ) != '' ) ?
-		get_option( 'sagepaynow_account_number' ) : '';
+	$options['account_number'] = ( get_option( 'netcash_paynow_account_number' ) != '' ) ?
+		get_option( 'netcash_paynow_account_number' ) : '';
 
-	$options['service_key'] = ( get_option( 'sagepaynow_service_key' ) != '' ) ?
-		get_option( 'sagepaynow_service_key' ) : 'c668242b-2dd7-46c6-b153-3f572d531be';
+	$options['service_key'] = ( get_option( 'netcash_paynow_service_key' ) != '' ) ?
+		get_option( 'netcash_paynow_service_key' ) : 'c668242b-2dd7-46c6-b153-3f572d531be';
 
-	$options['pending_status'] = ( get_option( 'sagepaynow_pending_status' ) != '' ) ?
-		get_option( 'sagepaynow_pending_status' ) : 1;
-	$options['complete_status'] = ( get_option( 'sagepaynow_complete_status' ) != '' ) ?
-		get_option( 'sagepaynow_complete_status' ) : 3;
+	$options['pending_status'] = ( get_option( 'netcash_paynow_pending_status' ) != '' ) ?
+		get_option( 'netcash_paynow_pending_status' ) : 1;
+	$options['complete_status'] = ( get_option( 'netcash_paynow_complete_status' ) != '' ) ?
+		get_option( 'netcash_paynow_complete_status' ) : 3;
 
-	$options['debug'] = ( (int)get_option( 'sagepaynow_debug' ) != '' ) ?
-		get_option( 'sagepaynow_debug' ) : 0;
-	$options['debug_email'] = ( get_option( 'sagepaynow_debug_email' ) != '' ) ?
-		get_option( 'sagepaynow_debug_email' ) : get_option('admin_email');
+	$options['debug'] = ( (int)get_option( 'netcash_paynow_debug' ) != '' ) ?
+		get_option( 'netcash_paynow_debug' ) : 0;
+	$options['debug_email'] = ( get_option( 'netcash_paynow_debug_email' ) != '' ) ?
+		get_option( 'netcash_paynow_debug_email' ) : get_option('admin_email');
 
-	$options['email_admin_on_success'] = ( get_option( 'sagepaynow_email_admin_on_success' ) != '' ) ?
-		get_option( 'sagepaynow_email_admin_on_success' ) : 1;
+	$options['email_admin_on_success'] = ( get_option( 'netcash_paynow_email_admin_on_success' ) != '' ) ?
+		get_option( 'netcash_paynow_email_admin_on_success' ) : 1;
 
-	$options['success_email'] = ( get_option( 'sagepaynow_success_email' ) != '' ) ?
-		get_option( 'sagepaynow_success_email' ) : get_option('admin_email');
+	$options['success_email'] = ( get_option( 'netcash_paynow_success_email' ) != '' ) ?
+		get_option( 'netcash_paynow_success_email' ) : get_option('admin_email');
 
-	$options['form_name_first'] = ( get_option( 'sagepaynow_form_name_first' ) != '' ) ?
-		get_option( 'sagepaynow_form_name_first' ) : 2;
-	$options['form_name_last'] = ( get_option( 'sagepaynow_form_name_last' ) != '' ) ?
-		get_option( 'sagepaynow_form_name_last' ) : 3;
+	$options['form_name_first'] = ( get_option( 'netcash_paynow_form_name_first' ) != '' ) ?
+		get_option( 'netcash_paynow_form_name_first' ) : 2;
+	$options['form_name_last'] = ( get_option( 'netcash_paynow_form_name_last' ) != '' ) ?
+		get_option( 'netcash_paynow_form_name_last' ) : 3;
 
 	if (isset($_SESSION['pn_error'] )) { ?>
 		<div class="error notice">
@@ -610,7 +610,7 @@ function form_sagepaynow()
 		<tr>
 		  <td>Account Number:</td>
 		  <td>
-			<input type="text" size="40" value="'. $options['account_number'] .'" name="sagepaynow_account_number" /> <br />
+			<input type="text" size="40" value="'. $options['account_number'] .'" name="netcash_paynow_account_number" /> <br />
 		  </td>
 		</tr>'."\n";
 
@@ -618,7 +618,7 @@ function form_sagepaynow()
 		<tr>
 		  <td colspan="2">
 			<span  class="wpscsmall description">
-			Please register with <a href="https://sagepay.co.za/" target="_blank">Sage Pay</a> to use this module. You will require a Pay Now Service Key which is available from your Sage Connect -> Pay Now section on your Sage Pay <a href="https://merchant.sagepay.co.za/" target="_blank">Merchant Account</a>.
+			Please register with <a href="https://netcash.co.za/" target="_blank">Netcash Pay Now</a> to use this module. You will require a Pay Now Service Key which is available from your Netcash Connect -> Pay Now section on your Netcash Pay Now <a href="https://merchant.netcash.co.za/" target="_blank">Merchant Account</a>.
 			</span>
 		  </td>
 		</tr>
@@ -626,7 +626,7 @@ function form_sagepaynow()
 		<tr>
 		  <td>Service Key:</td>
 		  <td>
-			<input type="text" size="40" value="'. $options['service_key'] .'" name="sagepaynow_service_key" /> <br />
+			<input type="text" size="40" value="'. $options['service_key'] .'" name="netcash_paynow_service_key" /> <br />
 		  </td>
 		</tr>'."\n";
 
@@ -638,7 +638,7 @@ function form_sagepaynow()
 		<tr>
 		  <td>Status for Pending Payments:</td>
 		  <td>
-			<select name="sagepaynow_pending_status">';
+			<select name="netcash_paynow_pending_status">';
 
 	foreach( $wpsc_purchlog_statuses as $status )
 		$output .= '<option value="'. $status['order'] .'" '. ( ( $status['order'] == $options['pending_status'] ) ? 'selected' : '' ) .'>'. $status['label'] .'</option>';
@@ -650,7 +650,7 @@ function form_sagepaynow()
 		<tr>
 		  <td>Status for Successful Payments:</td>
 		  <td>
-			<select name="sagepaynow_complete_status">';
+			<select name="netcash_paynow_complete_status">';
 
 	foreach( $wpsc_purchlog_statuses as $status )
 		$output .= '<option value="'. $status['order'] .'" '. ( ( $status['order'] == $options['complete_status'] ) ? 'selected' : '' ) .'>'. $status['label'] .'</option>';
@@ -661,28 +661,28 @@ function form_sagepaynow()
 		</tr>
 		<tr>
 		<td>Send Email on Payment Success:</td>
-		<td> <input type="radio" value="1" name="sagepaynow_email_admin_on_success" id="email_admin_on_success1" '. ( $options['email_admin_on_success'] == 1 ? 'checked' : '' ) .' />
+		<td> <input type="radio" value="1" name="netcash_paynow_email_admin_on_success" id="email_admin_on_success1" '. ( $options['email_admin_on_success'] == 1 ? 'checked' : '' ) .' />
 			  <label for="email_admin_on_success1">On</label>&nbsp;
-			<input type="radio" value="0" name="sagepaynow_email_admin_on_success" id="email_admin_on_success2" '. ( $options['email_admin_on_success'] == 0 ? 'checked' : '' ) .' />
+			<input type="radio" value="0" name="netcash_paynow_email_admin_on_success" id="email_admin_on_success2" '. ( $options['email_admin_on_success'] == 0 ? 'checked' : '' ) .' />
 			  <label for="email_admin_on_success2">Off</label></td>
 		</tr>
 		<tr>
 		   <td>Payment Success Email:</td>
-		   <td> <input type="text" size="40" name="sagepaynow_success_email" value="'. $options['success_email'] .'" /></td>
+		   <td> <input type="text" size="40" name="netcash_paynow_success_email" value="'. $options['success_email'] .'" /></td>
 		</tr>
 		<tr>
 		  <td>Debugging:</td>
 		  <td>
-			<input type="radio" value="1" name="sagepaynow_debug" id="sagepaynow_debug1" '. ( $options['debug'] == 1 ? 'checked' : '' ) .' />
-			  <label for="sagepaynow_debug1">On</label>&nbsp;
-			<input type="radio" value="0" name="sagepaynow_debug" id="sagepaynow_debug2" '. ( $options['debug'] == 0 ? 'checked' : '' ) .' />
-			  <label for="sagepaynow_debug2">Off</label>
+			<input type="radio" value="1" name="netcash_paynow_debug" id="netcash_paynow_debug1" '. ( $options['debug'] == 1 ? 'checked' : '' ) .' />
+			  <label for="netcash_paynow_debug1">On</label>&nbsp;
+			<input type="radio" value="0" name="netcash_paynow_debug" id="netcash_paynow_debug2" '. ( $options['debug'] == 0 ? 'checked' : '' ) .' />
+			  <label for="netcash_paynow_debug2">Off</label>
 		 </td>
 		</tr>
 		<tr>
 		  <td>Debug Email:</td>
 		  <td>
-			<input type="text" size="40" name="sagepaynow_debug_email" value="'. $options['debug_email'] .'" />
+			<input type="text" size="40" name="netcash_paynow_debug_email" value="'. $options['debug_email'] .'" />
 		  </td>
 		</tr>';
 
@@ -693,11 +693,11 @@ function form_sagepaynow()
 		WHERE `id` IN ('". absint( get_option( 'currency_type' ) ) ."')";
 	$store_curr_data = $wpdb->get_row( $sql, ARRAY_A );
 
-	$current_curr = get_option( 'sagepaynow_currcode' );
+	$current_curr = get_option( 'netcash_paynow_currcode' );
 
-	if( empty( $current_curr ) && in_array( $store_curr_data['code'], $wpsc_gateways['sagepaynow']['supported_currencies']['currency_list'] ) )
+	if( empty( $current_curr ) && in_array( $store_curr_data['code'], $wpsc_gateways['netcash_paynow']['supported_currencies']['currency_list'] ) )
 	{
-		update_option( 'sagepaynow_currcode', $store_curr_data['code'] );
+		update_option( 'netcash_paynow_currcode', $store_curr_data['code'] );
 		$current_curr = $store_curr_data['code'];
 	}
 
@@ -712,16 +712,16 @@ function form_sagepaynow()
 			</tr>
 			<tr>
 				<td colspan="2">Your website uses <strong>'. $store_curr_data['currency'] .'</strong>.
-					This currency is not supported by Sage Pay Now, please select a currency using the drop
+					This currency is not supported by Netcash Pay Now, please select a currency using the drop
 					down menu below. Buyers on your site will still pay in your local currency however
-					we will send the order through to Sage Pay Now using the currency below:</td>
+					we will send the order through to Netcash Pay Now using the currency below:</td>
 			</tr>
 			<tr>
 				<td>Select Currency:</td>
 				<td>
-					<select name="sagepaynow_currcode">';
+					<select name="netcash_paynow_currcode">';
 
-		$pn_curr_list = $wpsc_gateways['sagepaynow']['supported_currencies']['currency_list'];
+		$pn_curr_list = $wpsc_gateways['netcash_paynow']['supported_currencies']['currency_list'];
 
 		$sql =
 			"SELECT DISTINCT `code`, `currency`
@@ -752,14 +752,14 @@ function form_sagepaynow()
 
 		<tr class="firstrowth">
 			<td style="border-bottom: medium none;" colspan="2">
-				<strong class="form_group">Fields Sent to Sage Pay Now</strong>
+				<strong class="form_group">Fields Sent to Netcash Pay Now</strong>
 			</td>
 		</tr>
 
 		<tr>
 			<td>First Name Field</td>
 			<td>
-			  <select name="sagepaynow_form[name_first]">
+			  <select name="netcash_paynow_form[name_first]">
 			  '. nzshpcrt_form_field_list( $options['form_name_first'] ) .'
 			  </select>
 			</td>
@@ -767,7 +767,7 @@ function form_sagepaynow()
 		<tr>
 			<td>Last Name Field</td>
 			<td>
-			  <select name="sagepaynow_form[name_last]">
+			  <select name="netcash_paynow_form[name_last]">
 			  '. nzshpcrt_form_field_list( $options['form_name_last'] ) .'
 			  </select>
 			</td>
@@ -777,4 +777,4 @@ function form_sagepaynow()
 }
 
 // Add IPN check to WordPress init
-// add_action( 'init', 'pn_sagepaynow_ipn' );
+// add_action( 'init', 'pn_netcash_paynow_ipn' );

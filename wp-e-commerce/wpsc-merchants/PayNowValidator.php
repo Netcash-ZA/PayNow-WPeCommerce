@@ -1,11 +1,11 @@
 <?php
 
-namespace SagePay;
+namespace Netcash;
 
 /**
- * A helper class to interact with the Sage validation API
+ * A helper class to interact with the Netcash validation API
  * Class PayNowValidator
- * @package SagePay
+ * @package Netcash
  */
 class PayNowValidator {
 
@@ -55,7 +55,7 @@ class PayNowValidator {
 	}
 
     /**
-     * Get the SagePay host to use for the API
+     * Get the Netcash Pay Now host to use for the API
      * @param  string $which    For authentication, use 'auth'
      * @return string The host
      */
@@ -81,7 +81,7 @@ class PayNowValidator {
 
     /**
      * Validates an array of service keys
-     * Docs: https://www.sagepay.co.za/sagepay/partners_developers-technical_documents-sage_connect.asp
+     * Docs: https://www.netcash.co.za/netcash/partners_developers-technical_documents-sage_connect.asp
      *       https://ws.sagepay.co.za/niws/niws_partner.svc
      * @param string $merchant_account  The merchant account
      * @param array  $keys              The keys. ServiceId as key and the ServiceKey as the value
@@ -144,7 +144,7 @@ class PayNowValidator {
         $soap->__setSoapHeaders($headers);
         $result = $soap->ValidateServiceKey(['request'=>$xml_arr]);
 
-        // See status codes here: https://www.sagepay.co.za/sagepay/partners_developers-technical_documents-sage_connect.asp
+        // See status codes here: https://www.netcash.co.za/netcash/partners_developers-technical_documents-sage_connect.asp
         if( $result && isset($result->ValidateServiceKeyResult) ) {
 
 	        $accountStatus = $result->ValidateServiceKeyResult->AccountStatus;
@@ -242,7 +242,7 @@ class PayNowValidator {
             '001' => 'Authenticated',
             '103' => 'No active partner found for this Software vendor key',
             '104' => 'No active client found for this Account number',
-            '200' => 'General service error – contact Sage Pay support',
+            '200' => 'General service error – contact Netcash support',
             '201' => 'Account locked out for 10 minutes due to unsuccessful validation',
         );
     }

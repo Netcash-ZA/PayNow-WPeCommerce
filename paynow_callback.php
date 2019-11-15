@@ -2,14 +2,15 @@
 
 define('WP_USE_THEMES', false);
 require('./wp-load.php');
+// require( dirname(__FILE__). '/paynow_common.inc');
 
-$home_url = get_option('siteurl');
 $success = false;
 
 function pn_do_transaction(){
+    $home_url = get_option('siteurl');
 
     $accepted = isset($_POST['TransactionAccepted']) && $_POST['TransactionAccepted'] == true;
-    if( $accepted && pn_sagepaynow_ipn() ) {
+    if( $accepted && pn_netcash_paynow_ipn() ) {
 
         // Transaction successfull
         do_action('wpsc_payment_successful');

@@ -1,12 +1,13 @@
 <?php
 /**
- * sagepaynow_common.inc
+ * paynow_common.inc
  */
 //// Create user agent string
 // User agent constituents (for cURL)
+define( 'PN_DEBUG', ( get_option('netcash_paynow_debug') == 1  ? true : false ) );
 define( 'PN_SOFTWARE_NAME', 'WP_e-Commerce' );
 define( 'PN_SOFTWARE_VER', WPSC_PRESENTABLE_VERSION );
-define( 'PN_MODULE_NAME', 'SagePayNow-WP_e-Commerce' );
+define( 'PN_MODULE_NAME', 'NetcashPayNow-WP_e-Commerce' );
 define( 'PN_MODULE_VER', '2.0' );
 
 // Features
@@ -83,7 +84,7 @@ function pnlog( $msg = '', $close = false )
             if( !$fh )
             {
                 $pathinfo = pathinfo( __FILE__ );
-                $fh = fopen( $pathinfo['dirname'] .'/sagepaynow.log', 'a+' );
+                $fh = fopen( $pathinfo['dirname'] .'/paynow.log', 'a+' );
             }
 
             // If file was successfully created
