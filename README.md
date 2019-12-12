@@ -14,7 +14,7 @@ Installation Instructions
 -------------------------
 
 Download the files from Github and copy them to your catalog directory:
-* https://github.com/Netcash/PayNow-WPeCommerce/archive/master.zip
+* https://github.com/Netcash-ZA/PayNow-WPeCommerce/archive/master.zip
 
 The downloaded files contains the source but you will only require paynow-wp-e-commerce.zip later when you upload the new plugin.
 
