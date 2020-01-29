@@ -122,6 +122,7 @@ function gateway_netcash_paynow( $sep, $sessionid )
 		$pnDescription .= ' Total = '. number_format( $pnAmount, 2, '.', ',' );
 	}
 
+	$doTokenization = get_option( 'netcash_paynow_do_tokenization' );
 	$serviceKey = get_option( 'netcash_paynow_service_key' );
 	$netcash_paynow_url = 'https://paynow.netcash.co.za/site/paynow.aspx';
 
@@ -165,7 +166,7 @@ function gateway_netcash_paynow( $sep, $sessionid )
 		'p3' => "{$customerName} | {$orderID}",
 		'm3' => "$netcashGUID",
 		'm4' => "{$customerID}",
-		'm14' => "1",
+		'm14' => $doTokenization,
 
 		// Other details
 		// 'm6' => PN_USER_AGENT,
@@ -348,12 +349,32 @@ function pn_netcash_paynow_ipn()
 			{
 				case 'true':
 					pnlog( '- Complete' );
+					
+					$ccNotes = "";
+					if($pnData['Method'] == '1') {
+						// It was a CC transaction
+
+						if(isset($pnData['ccHolder'])) {
+							// We have CC detail
+							$pnCreditCardDetail = "";
+							$pnCreditCardDetail .= "Credit card name: {$pnData['ccHolder']} \r\n";
+							$pnCreditCardDetail .= "Credit card number: {$pnData['ccMasked']} \r\n";
+							$pnCreditCardDetail .= "Expiry date: {$pnData['ccExpiry']} \r\n";
+							$pnCreditCardDetail .= "Card token: {$pnData['ccToken']} \r\n";
+
+							// Add CC detail as note
+							$ccNotes = "Tokenized credit card detail: \r\n {$pnCreditCardDetail}";
+						} else {
+							$ccNotes = "Paid with credit card but tokenized detail was not received.";
+						}
+					}
 
 					// Update the purchase status
 					$data = array(
 						'processed' => get_option( 'netcash_paynow_complete_status'),
 						'transactid' => $transaction_id,
 						'date' => time(),
+						'notes' => $ccNotes
 					);
 
 					wpsc_update_purchase_log_details( $sessionid, $data, 'sessionid' );
@@ -501,6 +522,7 @@ function submit_netcash_paynow()
 
 	$account_number = isset( $_POST['netcash_paynow_account_number'] ) ? $_POST['netcash_paynow_account_number'] : '';
 	$service_key = isset( $_POST['netcash_paynow_service_key'] ) ? $_POST['netcash_paynow_service_key'] : '';
+	$do_tokenization = isset( $_POST['netcash_paynow_do_tokenization'] ) ? $_POST['netcash_paynow_do_tokenization'] : '';
 
 	if( $account_number && $service_key ) {
 		$Validator = new netcash\PayNowValidator();
@@ -540,6 +562,9 @@ function submit_netcash_paynow()
 
 	if( isset( $_POST['netcash_paynow_debug'] ) )
 		update_option( 'netcash_paynow_debug', (int)$_POST['netcash_paynow_debug'] );
+
+	if( isset( $_POST['netcash_paynow_do_tokenization'] ) )
+		update_option( 'netcash_paynow_do_tokenization', (int)$_POST['netcash_paynow_do_tokenization'] );
 
 	if( isset( $_POST['netcash_paynow_debug_email'] ) )
 		update_option( 'netcash_paynow_debug_email', $_POST['netcash_paynow_debug_email'] );
@@ -581,6 +606,9 @@ function form_netcash_paynow()
 		get_option( 'netcash_paynow_pending_status' ) : 1;
 	$options['complete_status'] = ( get_option( 'netcash_paynow_complete_status' ) != '' ) ?
 		get_option( 'netcash_paynow_complete_status' ) : 3;
+
+	$options['do_tokenization'] = ( (int)get_option( 'netcash_paynow_do_tokenization' ) != '' ) ?
+		get_option( 'netcash_paynow_do_tokenization' ) : 0;
 
 	$options['debug'] = ( (int)get_option( 'netcash_paynow_debug' ) != '' ) ?
 		get_option( 'netcash_paynow_debug' ) : 0;
@@ -669,6 +697,15 @@ function form_netcash_paynow()
 		<tr>
 		   <td>Payment Success Email:</td>
 		   <td> <input type="text" size="40" name="netcash_paynow_success_email" value="'. $options['success_email'] .'" /></td>
+		</tr>
+		<tr>
+		  <td>Do tokenization?</td>
+		  <td>
+			<input type="radio" value="1" name="netcash_paynow_do_tokenization" id="netcash_paynow_do_tokenization1" '. ( $options['do_tokenization'] == 1 ? 'checked' : '' ) .' />
+			  <label for="netcash_paynow_do_tokenization1">On</label>&nbsp;
+			<input type="radio" value="0" name="netcash_paynow_do_tokenization" id="netcash_paynow_do_tokenization2" '. ( $options['do_tokenization'] == 0 ? 'checked' : '' ) .' />
+			  <label for="netcash_paynow_do_tokenization2">Off</label>
+		 </td>
 		</tr>
 		<tr>
 		  <td>Debugging:</td>
