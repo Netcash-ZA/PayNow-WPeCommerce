@@ -34,7 +34,7 @@ A. Netcash Now Gateway Configuration Steps:
 	https://merchant.netcash.co.za/SiteLogin.aspx
 2. Type in your Netcash Username, Password, and PIN
 2. Click on Account Profile
-3. Click Connect
+3. Click NetConnector
 4. Click on Pay Now
 5. Click "Active:"
 6. Type in your Email address
