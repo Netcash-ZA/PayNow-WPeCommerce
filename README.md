@@ -8,7 +8,7 @@ Introduction
 
 Netcash South Africa's Pay Now third party gateway integration for WP e-Commerce.
 
-This module gives you to access the Netcash Now gateway which in lets you process credit card transactions online. VISA and MasterCard are supported.
+This module gives you to access the Netcash Pay Now gateway which in lets you process credit card transactions online. VISA and MasterCard are supported.
 
 Installation Instructions
 -------------------------
@@ -24,17 +24,17 @@ Configuration
 Prerequisites:
 
 You will need:
-* Netcash Now login credentials
-* Netcash Now Service key
+* Netcash login credentials
+* Netcash Pay Now Service key
 * OpenCart admin login credentials
 
 A. Netcash Now Gateway Configuration Steps:
 
-1. Log into your Netcash Now Gateway configuration page:
+1. Log into your Netcash account:
 	https://merchant.netcash.co.za/SiteLogin.aspx
 2. Type in your Netcash Username, Password, and PIN
 2. Click on Account Profile
-3. Click NetConnector
+3. Click on NetConnector
 4. Click on Pay Now
 5. Click "Active:"
 6. Type in your Email address
