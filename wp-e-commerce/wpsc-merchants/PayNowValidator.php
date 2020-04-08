@@ -22,7 +22,7 @@ class PayNowValidator {
 
     protected $debugging = false;
     // Default vendor key
-    protected $vendorKey = '24ade73c-98cf-47b3-99be-cc7b867b3080';
+    protected $vendorKey = '208693ef6-d77c-4504-976b-ea54be1f68d1';
 
     function __construct() {}
 
